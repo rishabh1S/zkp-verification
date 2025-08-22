@@ -1,0 +1,15 @@
+# root .gitignore
+node_modules/
+dist/
+build/
+.vscode/
+.env
+.env.local
+/.idea
+/.DS_Store
+**/target/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+secrets/
+*.log
