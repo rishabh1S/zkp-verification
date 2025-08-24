@@ -6,7 +6,7 @@ build/
 .env
 .env.local
 /.idea
-/.DS_Store
+.DS_Store
 **/target/
 **/.venv/
 **/__pycache__/
