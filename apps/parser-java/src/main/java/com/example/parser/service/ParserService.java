@@ -59,7 +59,11 @@ public class ParserService {
     }
 
     private File storeTempFile(MultipartFile file) throws IOException {
-        String suffix = file.getOriginalFilename().toLowerCase().endsWith(".pdf") ? ".pdf" : ".img";
+        String originalFilename = file.getOriginalFilename();
+        String safeName = (originalFilename != null) ? originalFilename.toLowerCase() : "";
+
+        String suffix = safeName.endsWith(".pdf") ? ".pdf" : ".img";
+
         File tempFile = File.createTempFile("upload-", suffix);
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             fos.write(file.getBytes());
