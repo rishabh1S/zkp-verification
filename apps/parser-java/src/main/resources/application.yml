@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: parser
+
+server:
+  port: 8080
+
+tessdata:
+  path: /usr/share/tesseract-ocr/4.00/tessdata

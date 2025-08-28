@@ -1,12 +1,12 @@
 package com.example.parser.exceptions;
 
+import java.time.Instant;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.time.Instant;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,12 +21,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleExtractionError(ExtractionFailedException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(errorResponse("EXTRACTION_FAILED", ex.getMessage()));
-    }
-
-    @ExceptionHandler(ParserException.class)
-    public ResponseEntity<?> handleParserException(ParserException ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(errorResponse("PARSER_ERROR", ex.getMessage()));
     }
 
     @ExceptionHandler(HashingException.class)

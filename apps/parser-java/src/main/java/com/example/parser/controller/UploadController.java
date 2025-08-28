@@ -25,8 +25,13 @@ public class UploadController {
     public ResponseEntity<?> uploadDocument(@RequestParam MultipartFile file) {
         try {
             String originalFilename = file.getOriginalFilename();
-            if (originalFilename == null || !originalFilename.endsWith(".pdf")) {
-                throw new InvalidFileFormatException("Only PDF files are supported");
+            if (originalFilename == null)
+                throw new InvalidFileFormatException("File must have a name");
+
+            String lowerName = originalFilename.toLowerCase();
+            if (!(lowerName.endsWith(".pdf") || lowerName.endsWith(".png") || lowerName.endsWith(".jpg")
+                    || lowerName.endsWith(".jpeg"))) {
+                throw new InvalidFileFormatException("Only PDF, PNG, JPG files are supported");
             }
             ParseResult result = parserService.parse(file);
             return ResponseEntity.ok(result);
