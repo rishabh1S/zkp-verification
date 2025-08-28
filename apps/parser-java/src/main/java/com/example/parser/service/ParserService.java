@@ -62,10 +62,11 @@ public class ParserService {
             // 5) Build response
             Map<String, Object> fields = new HashMap<>();
             if (dob != null) {
-                fields.put("dobPreview", maskValue(dob));
+                fields.put("dobPreview", dob);
                 fields.put("dobHash", sha256(dob));
             }
-            return new ParseResult(UUID.randomUUID().toString(), fields);
+            float confidence = dob != null ? 0.95f : 0.0f;
+            return new ParseResult(UUID.randomUUID().toString(), fields, confidence);
 
         } catch (IOException e) {
             throw new ExtractionFailedException("Failed to extract text from PDF: " + e.getMessage());
@@ -160,9 +161,5 @@ public class ParserService {
         } catch (NoSuchAlgorithmException e) {
             throw new HashingException("Error computing SHA-256 hash", e);
         }
-    }
-
-    private String maskValue(String value) {
-        return "****-**-" + value.substring(value.length() - 2);
     }
 }
