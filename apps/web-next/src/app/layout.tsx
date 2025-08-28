@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,6 +40,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <Toaster position="top-right" reverseOrder={false} />
             {children}
           </ThemeProvider>
         </AuthProvider>

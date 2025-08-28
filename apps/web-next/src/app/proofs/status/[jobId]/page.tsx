@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/layout/navbar";
 import { apiClient, type ProofStatusResponse } from "@/lib/api";
 import { proofStorage } from "@/lib/storage";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import {
   Loader2,
   CheckCircle,
@@ -30,7 +30,6 @@ import {
 export default function ProofStatusPage() {
   const params = useParams();
   const router = useRouter();
-  const { toast } = useToast();
   const jobId = params.jobId as string;
 
   const [status, setStatus] = useState<ProofStatusResponse | null>(null);
@@ -92,19 +91,12 @@ export default function ProofStatusPage() {
         proof_hash: status.token.proof_hash || `hash_${jobId}`,
         name: `Proof ${new Date().toLocaleDateString()}`,
       });
-
-      toast({
-        title: "Saved to wallet",
-        description: "Proof has been saved to your local wallet",
-      });
+      toast.success("Proof saved to wallet" + proofId);
 
       router.push("/wallet");
     } catch (error) {
-      toast({
-        title: "Save failed",
-        description: "Failed to save proof to wallet",
-        variant: "destructive",
-      });
+      console.error("Failed to save proof:", error);
+      toast.error("Failed to save proof to wallet");
     }
   };
 

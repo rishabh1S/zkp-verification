@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/components/auth/auth-provider";
 import { Shield, Wallet, Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -27,7 +27,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { connectWallet } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,24 +40,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
+        toast.error("Invalid email or password");
       } else {
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
+        toast.success("Login successful");
         router.push("/issuer");
       }
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "An error occurred during login",
-        variant: "destructive",
-      });
+      console.error("Login error:", error);
+      toast.error("An error occurred during login");
     } finally {
       setIsLoading(false);
     }
@@ -67,17 +56,11 @@ export default function LoginPage() {
   const handleWalletConnect = async () => {
     try {
       await connectWallet();
-      toast({
-        title: "Wallet connected",
-        description: "Successfully connected to your wallet",
-      });
+      toast.success("Wallet connected successfully");
       router.push("/dashboard");
     } catch (error) {
-      toast({
-        title: "Connection failed",
-        description: "Failed to connect wallet",
-        variant: "destructive",
-      });
+      console.error("Wallet connection error:", error);
+      toast.error("Failed to connect wallet");
     }
   };
 

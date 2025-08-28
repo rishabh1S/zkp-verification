@@ -15,13 +15,12 @@ import { Navbar } from "@/components/layout/navbar";
 import { useAuth } from "@/components/auth/auth-provider";
 import { proofStorage, type StoredProof } from "@/lib/storage";
 import { Plus, QrCode, Download, Eye, Trash2, Shield } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 export default function DashboardPage() {
   const [proofs, setProofs] = useState<StoredProof[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { walletSession } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
     loadProofs();
@@ -30,7 +29,7 @@ export default function DashboardPage() {
   const loadProofs = async () => {
     try {
       const allProofs = await proofStorage.getAllProofs();
-      setProofs(allProofs.reverse()); // Show newest first
+      setProofs(allProofs.toReversed()); // Show newest first
     } catch (error) {
       console.error("Failed to load proofs:", error);
     } finally {
@@ -56,16 +55,10 @@ export default function DashboardPage() {
     try {
       await proofStorage.deleteProof(proofId);
       setProofs(proofs.filter((p) => p.id !== proofId));
-      toast({
-        title: "Proof deleted",
-        description: "Proof has been removed from your wallet",
-      });
+      toast.success("Proof has been removed from your wallet");
     } catch (error) {
-      toast({
-        title: "Delete failed",
-        description: "Failed to delete proof",
-        variant: "destructive",
-      });
+      console.error("Failed to delete proof:", error);
+      toast.error("Failed to delete proof");
     }
   };
 
@@ -129,114 +122,126 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          {isLoading ? (
-            <div className="grid gap-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <div className="animate-pulse space-y-3">
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
-                      <div className="h-3 bg-muted rounded w-1/3"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : proofs.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Proofs Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't created any proofs yet. Start by uploading a
-                  document to generate your first privacy-preserving proof.
-                </p>
-                <Button asChild>
-                  <Link href="/upload">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Your First Proof
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {proofs.map((proof) => (
-                <Card key={proof.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {proof.name || "Unnamed Proof"}
-                        </CardTitle>
-                        <CardDescription>
-                          {getClaimLabel(proof.token_json)} • Created{" "}
-                          {formatDate(proof.created_at)}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {proof.token_json.claim && (
-                        <div className="text-sm">
-                          <span className="font-medium">Claim:</span>{" "}
-                          {proof.token_json.claim.type || "Eligibility"}
+          {(() => {
+            let content;
+            if (isLoading) {
+              content = (
+                <div className="grid gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-6">
+                        <div className="animate-pulse space-y-3">
+                          <div className="h-4 bg-muted rounded w-1/4"></div>
+                          <div className="h-3 bg-muted rounded w-1/2"></div>
+                          <div className="h-3 bg-muted rounded w-1/3"></div>
                         </div>
-                      )}
-                      <div className="text-sm">
-                        <span className="font-medium">Expires:</span>{" "}
-                        {proof.token_json.expires_at
-                          ? formatDate(proof.token_json.expires_at)
-                          : "No expiration"}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link
-                            href={`/verify?token=${encodeURIComponent(
-                              JSON.stringify(proof.token_json)
-                            )}`}
-                          >
-                            <QrCode className="mr-2 h-3 w-3" />
-                            Show QR
-                          </Link>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownload(proof)}
-                        >
-                          <Download className="mr-2 h-3 w-3" />
-                          Download
-                        </Button>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link
-                            href={`/verify?token=${encodeURIComponent(
-                              JSON.stringify(proof.token_json)
-                            )}`}
-                          >
-                            <Eye className="mr-2 h-3 w-3" />
-                            Verify
-                          </Link>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(proof.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-3 w-3" />
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              );
+            } else if (proofs.length === 0) {
+              content = (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Proofs Yet
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      You haven't created any proofs yet. Start by uploading a
+                      document to generate your first privacy-preserving proof.
+                    </p>
+                    <Button asChild>
+                      <Link href="/upload">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Your First Proof
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+              );
+            } else {
+              content = (
+                <div className="grid gap-4">
+                  {proofs.map((proof) => (
+                    <Card key={proof.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {proof.name || "Unnamed Proof"}
+                            </CardTitle>
+                            <CardDescription>
+                              {getClaimLabel(proof.token_json)} • Created{" "}
+                              {formatDate(proof.created_at)}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="default">Active</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {proof.token_json.claim && (
+                            <div className="text-sm">
+                              <span className="font-medium">Claim:</span>{" "}
+                              {proof.token_json.claim.type || "Eligibility"}
+                            </div>
+                          )}
+                          <div className="text-sm">
+                            <span className="font-medium">Expires:</span>{" "}
+                            {proof.token_json.expires_at
+                              ? formatDate(proof.token_json.expires_at)
+                              : "No expiration"}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link
+                                href={`/verify?token=${encodeURIComponent(
+                                  JSON.stringify(proof.token_json)
+                                )}`}
+                              >
+                                <QrCode className="mr-2 h-3 w-3" />
+                                Show QR
+                              </Link>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownload(proof)}
+                            >
+                              <Download className="mr-2 h-3 w-3" />
+                              Download
+                            </Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <Link
+                                href={`/verify?token=${encodeURIComponent(
+                                  JSON.stringify(proof.token_json)
+                                )}`}
+                              >
+                                <Eye className="mr-2 h-3 w-3" />
+                                Verify
+                              </Link>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDelete(proof.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-3 w-3" />
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              );
+            }
+            return content;
+          })()}
         </div>
       </div>
     </div>

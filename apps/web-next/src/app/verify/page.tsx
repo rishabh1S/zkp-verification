@@ -18,12 +18,11 @@ import { Navbar } from "@/components/layout/navbar";
 import { QRScanner } from "@/components/verification/qr-scanner";
 import { VerificationResult } from "@/components/verification/verification-result";
 import { apiClient, type VerifyResponse } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import { QrCode, FileText, LinkIcon, Loader2, Shield } from "lucide-react";
 
 export default function VerifyPage() {
   const searchParams = useSearchParams();
-  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("paste");
   const [tokenInput, setTokenInput] = useState("");
@@ -75,27 +74,13 @@ export default function VerifyPage() {
       if (response.data) {
         setVerificationResult(response.data);
         setVerifiedToken(token);
-        toast({
-          title: response.data.valid
-            ? "Verification successful"
-            : "Verification failed",
-          description: response.data.valid
-            ? "The proof is valid"
-            : "The proof is not valid",
-          variant: response.data.valid ? "default" : "destructive",
-        });
+        toast.success("Verification completed");
       } else {
         throw new Error(response.error || "Verification failed");
       }
     } catch (error) {
-      toast({
-        title: "Verification error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An error occurred during verification",
-        variant: "destructive",
-      });
+      console.error("Verification error:", error);
+      toast.error("Verification failed");
     } finally {
       setIsVerifying(false);
     }
@@ -103,11 +88,7 @@ export default function VerifyPage() {
 
   const handlePasteVerify = () => {
     if (!tokenInput.trim()) {
-      toast({
-        title: "No token provided",
-        description: "Please paste a token to verify",
-        variant: "destructive",
-      });
+      toast.error("Please enter a proof token to verify");
       return;
     }
     handleVerify(tokenInput);
@@ -115,11 +96,7 @@ export default function VerifyPage() {
 
   const handleUriVerify = () => {
     if (!uriInput.trim()) {
-      toast({
-        title: "No URI provided",
-        description: "Please enter a proof URI to verify",
-        variant: "destructive",
-      });
+      toast.error("Please enter a proof URI to verify");
       return;
     }
     handleVerify(undefined, uriInput);
@@ -142,11 +119,7 @@ export default function VerifyPage() {
         setActiveTab("uri");
         handleVerify(undefined, data);
       } else {
-        toast({
-          title: "Invalid QR code",
-          description: "The scanned QR code doesn't contain a valid proof",
-          variant: "destructive",
-        });
+        toast.error("The scanned QR code doesn't contain a valid proof");
       }
     }
   };

@@ -29,7 +29,7 @@ import {
 import { Navbar } from "@/components/layout/navbar";
 import { proofStorage, type StoredProof } from "@/lib/storage";
 import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import {
   Wallet,
   Plus,
@@ -54,7 +54,6 @@ export default function WalletPage() {
   const [editingProof, setEditingProof] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [selectedProof, setSelectedProof] = useState<StoredProof | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadProofs();
@@ -82,14 +81,10 @@ export default function WalletPage() {
   const loadProofs = async () => {
     try {
       const allProofs = await proofStorage.getAllProofs();
-      setProofs(allProofs.reverse()); // Show newest first
+      setProofs(allProofs.toReversed()); // Show newest first
     } catch (error) {
       console.error("Failed to load proofs:", error);
-      toast({
-        title: "Load failed",
-        description: "Failed to load proofs from wallet",
-        variant: "destructive",
-      });
+      toast.error("Failed to load proofs from wallet");
     } finally {
       setIsLoading(false);
     }
@@ -108,10 +103,7 @@ export default function WalletPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast({
-      title: "Downloaded",
-      description: "Proof downloaded successfully",
-    });
+    toast.success("Proof downloaded successfully");
   };
 
   const handleVerify = async (proof: StoredProof) => {
@@ -121,22 +113,11 @@ export default function WalletPage() {
       });
 
       if (response.data) {
-        toast({
-          title: response.data.valid ? "Valid proof" : "Invalid proof",
-          description: response.data.valid
-            ? "This proof is valid and verified"
-            : `Verification failed: ${
-                response.data.reason || "Unknown reason"
-              }`,
-          variant: response.data.valid ? "default" : "destructive",
-        });
+        toast.success("Verification completed");
       }
     } catch (error) {
-      toast({
-        title: "Verification failed",
-        description: "Failed to verify proof",
-        variant: "destructive",
-      });
+      console.error("Verification error:", error);
+      toast.error("Verification failed");
     }
   };
 
@@ -144,16 +125,10 @@ export default function WalletPage() {
     try {
       await proofStorage.deleteProof(proofId);
       setProofs(proofs.filter((p) => p.id !== proofId));
-      toast({
-        title: "Proof deleted",
-        description: "Proof has been removed from your wallet",
-      });
+      toast.success("Proof has been removed from your wallet");
     } catch (error) {
-      toast({
-        title: "Delete failed",
-        description: "Failed to delete proof",
-        variant: "destructive",
-      });
+      toast.error("Failed to delete proof");
+      console.error("Delete error:", error);
     }
   };
 
@@ -165,16 +140,10 @@ export default function WalletPage() {
       );
       setEditingProof(null);
       setEditName("");
-      toast({
-        title: "Name updated",
-        description: "Proof name has been updated",
-      });
+      toast.success("Proof name updated successfully");
     } catch (error) {
-      toast({
-        title: "Update failed",
-        description: "Failed to update proof name",
-        variant: "destructive",
-      });
+      console.error("Update error:", error);
+      toast.error("Failed to update proof name");
     }
   };
 

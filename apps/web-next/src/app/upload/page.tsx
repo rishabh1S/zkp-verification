@@ -19,7 +19,7 @@ import { DocumentPreview } from "@/components/upload/document-preview";
 import { ClaimSelector, type Claim } from "@/components/upload/claim-selector";
 import { useAuth } from "@/components/auth/auth-provider";
 import { apiClient, type DocumentUploadResponse } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 const steps = [
@@ -43,7 +43,6 @@ export default function UploadPage() {
 
   const { walletSession } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -81,19 +80,13 @@ export default function UploadPage() {
         setUploadProgress(100);
         setCompletedSteps([1]);
         setCurrentStep(2);
-        toast({
-          title: "Upload successful",
-          description: "Document processed successfully",
-        });
+        toast.success("Document processed successfully");
       } else {
         throw new Error(response.error || "Upload failed");
       }
     } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: "Failed to process document",
-        variant: "destructive",
-      });
+      console.error("Error processing document:", error);
+      toast.error("Failed to process document");
     } finally {
       clearInterval(progressInterval);
       setIsUploading(false);
@@ -144,20 +137,14 @@ export default function UploadPage() {
       });
 
       if (response.data) {
-        toast({
-          title: "Proof generation started",
-          description: "Your proof is being generated",
-        });
+        toast("Your proof is being generated");
         router.push(`/proofs/status/${response.data.job_id}`);
       } else {
         throw new Error(response.error || "Generation failed");
       }
     } catch (error) {
-      toast({
-        title: "Generation failed",
-        description: "Failed to start proof generation",
-        variant: "destructive",
-      });
+      console.error("Error generating proof:", error);
+      toast.error("Failed to start proof generation");
     } finally {
       setIsGenerating(false);
     }

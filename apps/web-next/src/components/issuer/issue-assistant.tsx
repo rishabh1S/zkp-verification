@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileUpload } from "@/components/upload/file-upload";
 import { DocumentPreview } from "@/components/upload/document-preview";
 import { apiClient, type DocumentUploadResponse } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import { Upload, Wand2, Loader2, CheckCircle, Copy } from "lucide-react";
 
 interface IssueAssistantProps {
@@ -40,7 +40,6 @@ interface ManualClaim {
 
 export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
   const { data: session } = useSession();
-  const { toast } = useToast();
 
   const [mode, setMode] = useState<"upload" | "manual">("upload");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -93,19 +92,13 @@ export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
       if (response.data) {
         setDocumentData(response.data);
         setUploadProgress(100);
-        toast({
-          title: "Upload successful",
-          description: "Document processed successfully",
-        });
+        toast.success("Document processed successfully");
       } else {
         throw new Error(response.error || "Upload failed");
       }
     } catch (error) {
-      toast({
-        title: "Upload failed",
-        description: "Failed to process document",
-        variant: "destructive",
-      });
+      console.error("Upload error:", error);
+      toast.error("Failed to process document");
     } finally {
       clearInterval(progressInterval);
       setIsUploading(false);
@@ -154,16 +147,10 @@ export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
       setIssuedToken(mockToken);
       onTokenIssued();
 
-      toast({
-        title: "Token issued successfully",
-        description: "The proof token has been generated and signed",
-      });
+      toast.success("Token issued successfully");
     } catch (error) {
-      toast({
-        title: "Issuance failed",
-        description: "Failed to issue token",
-        variant: "destructive",
-      });
+      console.error("Issuance error:", error);
+      toast.error("Failed to issue token");
     } finally {
       setIsIssuing(false);
     }
@@ -171,11 +158,7 @@ export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
 
   const handleManualIssue = async () => {
     if (!subjectAddress || !claimType || !claimValue) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -215,17 +198,10 @@ export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
       setCustomClaimType("");
       setClaimValue("");
       setNotes("");
-
-      toast({
-        title: "Token issued successfully",
-        description: "The manual proof token has been generated",
-      });
+      toast.success("Token issued successfully");
     } catch (error) {
-      toast({
-        title: "Issuance failed",
-        description: "Failed to issue manual token",
-        variant: "destructive",
-      });
+      console.error("Manual issuance error:", error);
+      toast.error("Failed to issue token");
     } finally {
       setIsIssuing(false);
     }
@@ -234,10 +210,7 @@ export function IssueAssistant({ onTokenIssued }: IssueAssistantProps) {
   const copyToken = () => {
     if (issuedToken) {
       navigator.clipboard.writeText(JSON.stringify(issuedToken, null, 2));
-      toast({
-        title: "Token copied",
-        description: "Token JSON copied to clipboard",
-      });
+      toast.success("Token JSON copied to clipboard");
     }
   };
 

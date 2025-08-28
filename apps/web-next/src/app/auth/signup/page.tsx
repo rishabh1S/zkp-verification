@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Shield, UserPlus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -32,26 +32,17 @@ export default function SignupPage() {
   const [role, setRole] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
+      toast.error("Passwords do not match");
       return;
     }
 
     if (!role) {
-      toast({
-        title: "Role required",
-        description: "Please select a role",
-        variant: "destructive",
-      });
+      toast.error("Please select a role");
       return;
     }
 
@@ -62,26 +53,15 @@ export default function SignupPage() {
       if (process.env.NEXT_PUBLIC_MOCK === "true") {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        toast({
-          title: "Account created",
-          description: "Your account has been created successfully",
-        });
+        toast.success("Account created successfully in mock mode");
         router.push("/auth/login");
       } else {
         // In production, implement real signup logic here
-        toast({
-          title: "Signup not available",
-          description: "Signup is not available in production mode",
-          variant: "destructive",
-        });
+        toast.error("Signup is not available in production yet");
       }
     } catch (error) {
-      toast({
-        title: "Signup failed",
-        description: "An error occurred during signup",
-        variant: "destructive",
-      });
+      console.error("Signup error:", error);
+      toast.error("An error occurred during signup");
     } finally {
       setIsLoading(false);
     }

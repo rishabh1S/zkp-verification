@@ -28,7 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import {
   Search,
   MoreVertical,
@@ -75,7 +75,6 @@ export function IssuedTokensList() {
   const [revokeDialog, setRevokeDialog] = useState<IssuedToken | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [isRevoking, setIsRevoking] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadTokens();
@@ -136,11 +135,8 @@ export function IssuedTokensList() {
         setTokens(mockTokens);
       }
     } catch (error) {
-      toast({
-        title: "Load failed",
-        description: "Failed to load issued tokens",
-        variant: "destructive",
-      });
+      console.error("Error loading tokens:", error);
+      toast.error("Failed to load issued tokens");
     } finally {
       setIsLoading(false);
     }
@@ -167,11 +163,7 @@ export function IssuedTokensList() {
 
   const handleRevoke = async (token: IssuedToken) => {
     if (!revokeReason.trim()) {
-      toast({
-        title: "Reason required",
-        description: "Please provide a reason for revocation",
-        variant: "destructive",
-      });
+      toast.error("Reason for revocation is required");
       return;
     }
 
@@ -197,22 +189,15 @@ export function IssuedTokensList() {
           )
         );
 
-        toast({
-          title: "Token revoked",
-          description: "The token has been successfully revoked",
-        });
-
+        toast.success("The token has been successfully revoked");
         setRevokeDialog(null);
         setRevokeReason("");
       } else {
         throw new Error("Revocation failed");
       }
     } catch (error) {
-      toast({
-        title: "Revocation failed",
-        description: "Failed to revoke token",
-        variant: "destructive",
-      });
+      console.error("Error revoking token:", error);
+      toast.error("Failed to revoke the token");
     } finally {
       setIsRevoking(false);
     }
@@ -230,17 +215,10 @@ export function IssuedTokensList() {
           t.id === token.id ? { ...t, on_chain: true, tx_hash: mockTxHash } : t
         )
       );
-
-      toast({
-        title: "Anchored on-chain",
-        description: "Token has been anchored to the blockchain",
-      });
+      toast.success("Token has been anchored to the blockchain");
     } catch (error) {
-      toast({
-        title: "Anchoring failed",
-        description: "Failed to anchor token on-chain",
-        variant: "destructive",
-      });
+      console.error("Error anchoring token on-chain:", error);
+      toast.error("Failed to anchor token on-chain");
     }
   };
 

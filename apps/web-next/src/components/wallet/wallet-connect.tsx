@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth/auth-provider";
 import { Wallet, Copy, LogOut } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 
 export function WalletConnect() {
   const {
@@ -19,15 +19,11 @@ export function WalletConnect() {
     disconnectWallet,
     isLoading,
   } = useAuth();
-  const { toast } = useToast();
 
   const copyAddress = () => {
     if (walletSession?.address) {
       navigator.clipboard.writeText(walletSession.address);
-      toast({
-        title: "Address copied",
-        description: "Wallet address copied to clipboard",
-      });
+      toast.success("Address copied to clipboard");
     }
   };
 

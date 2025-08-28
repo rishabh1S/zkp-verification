@@ -16,7 +16,7 @@ import {
   ExternalLink,
   Copy,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import toast from "react-hot-toast";
 import type { VerifyResponse } from "@/lib/api";
 
 interface VerificationResultProps {
@@ -30,8 +30,6 @@ export function VerificationResult({
   token,
   onNewVerification,
 }: VerificationResultProps) {
-  const { toast } = useToast();
-
   const getStatusIcon = () => {
     if (result.valid) {
       return <CheckCircle className="h-12 w-12 text-green-500" />;
@@ -64,10 +62,7 @@ export function VerificationResult({
   const copyTxHash = () => {
     if (result.txHash) {
       navigator.clipboard.writeText(result.txHash);
-      toast({
-        title: "Transaction hash copied",
-        description: "Transaction hash copied to clipboard",
-      });
+      toast.success("Transaction hash copied to clipboard");
     }
   };
 
