@@ -81,6 +81,7 @@ export default function UploadPage() {
         setCompletedSteps([1]);
         setCurrentStep(2);
         toast.success("Document processed successfully");
+        console.log("Document upload successful:", response.data);
       } else {
         throw new Error(response.error || "Upload failed");
       }
@@ -97,8 +98,8 @@ export default function UploadPage() {
     if (documentData) {
       setDocumentData({
         ...documentData,
-        extracted_fields: {
-          ...documentData.extracted_fields,
+        fields: {
+          ...documentData.fields,
           [field]: value,
         },
       });
@@ -124,7 +125,8 @@ export default function UploadPage() {
   };
 
   const handleGenerate = async () => {
-    if (!documentData || !walletSession) return;
+    // if (!documentData || !walletSession) return;
+    if (!documentData) return;
 
     setIsGenerating(true);
 
@@ -132,7 +134,7 @@ export default function UploadPage() {
       const response = await apiClient.generateProof({
         document_id: documentData.document_id,
         claim: selectedClaims,
-        wallet_address: walletSession.address,
+        // wallet_address: walletSession.address,
         expires_in_days: 30,
       });
 
@@ -213,7 +215,7 @@ export default function UploadPage() {
 
               {currentStep === 3 && documentData && (
                 <ClaimSelector
-                  extractedFields={documentData.extracted_fields}
+                  extractedFields={documentData.fields}
                   selectedClaims={selectedClaims}
                   onClaimsChange={setSelectedClaims}
                 />

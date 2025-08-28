@@ -133,7 +133,7 @@ export function FileUpload({
         <div className="text-sm text-muted-foreground">
           <p className="font-medium mb-1">Supported Documents:</p>
           <ul className="space-y-1">
-            <li>• Government ID (Passport, Driver's License)</li>
+            <li>• Government ID (Aadhar Card, Driver's License)</li>
             <li>• Income documents (Salary slips, Tax returns)</li>
             <li>• Bank statements and financial documents</li>
           </ul>
