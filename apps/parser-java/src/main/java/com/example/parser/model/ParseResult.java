@@ -11,5 +11,4 @@ import lombok.NoArgsConstructor;
 public class ParseResult {
     private String documentId;
     private Map<String, Object> fields;
-    private Map<String, Double> confidence;
 }
