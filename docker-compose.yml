@@ -14,6 +14,18 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - TESSDATA_PATH=${TESSDATA_PATH}
 
+  zk-prover:
+    build:
+      context: ./apps/zk-prover
+      dockerfile: Dockerfile
+    container_name: zkverify-zk-prover
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+
   orchestrator-service:
     build:
       context: ./apps/orchestrator-python
@@ -26,5 +38,12 @@ services:
     environment:
       - PARSER_API_URL=${PARSER_API_URL}
       - FRONTEND_URL=${FRONTEND_URL}
+      - ZK_PROVER_URL=${ZK_PROVER_URL}
     depends_on:
       - parser-service
+      - zk-prover
+    volumes:
+      - proofs-data:/app/proofs
+
+volumes:
+  proofs-data:

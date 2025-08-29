@@ -1,15 +1,32 @@
 # root .gitignore
+
+# Node
 node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build outputs
 dist/
-build/
+out/
+
+# Editor / OS files
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
 .env
 .env.local
-/.idea
-.DS_Store
+.env.*.local
+secrets/
+*.log
+
+# Rust / Cargo (circom build)
 **/target/
+
+# Python virtualenvs (if you do zk tooling in Python)
 **/.venv/
 **/__pycache__/
 **/*.pyc
-secrets/
-*.log
