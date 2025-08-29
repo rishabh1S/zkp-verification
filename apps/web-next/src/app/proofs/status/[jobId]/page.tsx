@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/layout/navbar";
@@ -26,6 +32,7 @@ import {
   Wallet,
   ArrowLeft,
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 
 export default function ProofStatusPage() {
   const params = useParams();
@@ -35,6 +42,9 @@ export default function ProofStatusPage() {
   const [status, setStatus] = useState<ProofStatusResponse | null>(null);
   const [isPolling, setIsPolling] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [showQr, setShowQr] = useState(false);
+
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -114,6 +124,18 @@ export default function ProofStatusPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrCanvasRef.current) return;
+
+    const url = qrCanvasRef.current.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `zkverify-proof-${jobId}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const getStatusIcon = () => {
@@ -196,15 +218,15 @@ export default function ProofStatusPage() {
                     <div className="space-y-1 text-sm">
                       <p>
                         <span className="font-medium">Type:</span>{" "}
-                        {status.token.claim?.type || "Eligibility Proof"}
+                        {status.token.claim?.[0]?.type || "Eligibility Proof"}
                       </p>
                       <p>
                         <span className="font-medium">Issued:</span>{" "}
-                        {new Date(status.token.issued_at).toLocaleDateString()}
+                        {new Date(status.token.issued_on).toLocaleDateString()}
                       </p>
                       <p>
                         <span className="font-medium">Expires:</span>{" "}
-                        {new Date(status.token.expires_at).toLocaleDateString()}
+                        {new Date(status.token.expires_on).toLocaleDateString()}
                       </p>
                       {status.proof_uri && (
                         <p>
@@ -235,14 +257,14 @@ export default function ProofStatusPage() {
                       asChild
                       className="flex-1 bg-transparent"
                     >
-                      <Link
-                        href={`/verify?token=${encodeURIComponent(
-                          JSON.stringify(status.token)
-                        )}`}
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowQr(true)}
+                        className="flex-1 bg-transparent"
                       >
                         <QrCode className="mr-2 h-4 w-4" />
                         Show QR
-                      </Link>
+                      </Button>
                     </Button>
                   </div>
                 </div>
@@ -279,6 +301,29 @@ export default function ProofStatusPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={showQr} onOpenChange={setShowQr}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Proof QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <QRCodeCanvas
+              value={JSON.stringify(status?.token || {})}
+              size={256}
+              ref={qrCanvasRef}
+            />
+            <Button
+              onClick={handleDownloadQr}
+              variant="outline"
+              className="w-full"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download QR
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

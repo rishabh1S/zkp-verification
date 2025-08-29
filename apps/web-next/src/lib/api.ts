@@ -5,7 +5,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface DocumentUploadResponse {
-  document_id: string;
+  documentId: string;
   fields: {
     dobPreview?: string;
     dobHash?: string;
@@ -90,10 +90,10 @@ class ApiClient {
         },
       };
     }
-
+    console.log("payload", payload);
     try {
       const response = await fetch(
-        `${this.baseUrlOrchestrator}/api/v1/proofs/generate`,
+        `${this.baseUrlOrchestrator}/api/proofs/generate`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -139,7 +139,7 @@ class ApiClient {
 
     try {
       const response = await fetch(
-        `${this.baseUrlOrchestrator}/api/v1/proofs/status/${jobId}`
+        `${this.baseUrlOrchestrator}/api/proofs/status/${jobId}`
       );
       const data = await response.json();
       return { status: response.status, data };
@@ -170,7 +170,7 @@ class ApiClient {
 
     try {
       const response = await fetch(
-        `${this.baseUrlOrchestrator}/api/v1/credentials/verify`,
+        `${this.baseUrlOrchestrator}/api/credentials/verify`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -196,7 +196,7 @@ class ApiClient {
 
     try {
       const response = await fetch(
-        `${this.baseUrlOrchestrator}/api/v1/credentials/revoke`,
+        `${this.baseUrlOrchestrator}/api/credentials/revoke`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

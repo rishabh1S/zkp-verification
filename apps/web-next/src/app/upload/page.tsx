@@ -127,12 +127,13 @@ export default function UploadPage() {
   const handleGenerate = async () => {
     // if (!documentData || !walletSession) return;
     if (!documentData) return;
+    console.log("documentData", documentData);
 
     setIsGenerating(true);
 
     try {
       const response = await apiClient.generateProof({
-        document_id: documentData.document_id,
+        document_id: documentData.documentId,
         claim: selectedClaims,
         // wallet_address: walletSession.address,
         expires_in_days: 30,

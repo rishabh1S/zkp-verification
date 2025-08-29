@@ -46,7 +46,7 @@ const presetClaims = [
     label: "Age ≥ 18 years",
     threshold: 18,
     operator: "gte" as const,
-    field: "birthYear",
+    field: "dobPreview",
     description: "Prove you are 18 years or older",
   },
   {
@@ -55,7 +55,7 @@ const presetClaims = [
     label: "Age ≥ 21 years",
     threshold: 21,
     operator: "gte" as const,
-    field: "birthYear",
+    field: "dobPreview",
     description: "Prove you are 21 years or older",
   },
   {
@@ -82,7 +82,7 @@ export function ClaimSelector({
   extractedFields,
   selectedClaims,
   onClaimsChange,
-}: ClaimSelectorProps) {
+}: Readonly<ClaimSelectorProps>) {
   const [customClaim, setCustomClaim] = useState({
     label: "",
     field: "",
