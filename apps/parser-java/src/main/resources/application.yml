@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: parser
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        "[format_sql]": true
+
+server:
+  port: 8080
+
+tessdata:
+  path: ${TESSDATA_PATH}
+
+frontend:
+  url: ${FRONTEND_URL}

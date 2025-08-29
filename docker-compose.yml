@@ -1,0 +1,30 @@
+services:
+  parser-service:
+    build:
+      context: ./apps/parser-java
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    container_name: zkverify-parser
+    env_file:
+      - .env
+    environment:
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TESSDATA_PATH=${TESSDATA_PATH}
+
+  orchestrator-service:
+    build:
+      context: ./apps/orchestrator-python
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    container_name: zkverify-orchestrator
+    env_file:
+      - .env
+    environment:
+      - PARSER_API_URL=${PARSER_API_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+    depends_on:
+      - parser-service
