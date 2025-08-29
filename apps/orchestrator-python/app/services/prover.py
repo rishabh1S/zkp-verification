@@ -3,11 +3,11 @@ import time
 import json
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
 import requests
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, Timeout
 
 from app.store.job_store import jobs
 
@@ -20,6 +20,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 PARSER_API_URL = os.getenv("PARSER_API_URL", "http://localhost:8080")
+ZK_PROVER_URL = os.getenv("ZK_PROVER_URL", "http://localhost:3001")
 PROOF_SIMULATE_SECONDS = 5  # seconds to simulate proof generation
 
 
@@ -40,6 +41,32 @@ def compute_hash(obj: Dict[str, Any]) -> str:
     raw = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
     return "sha256:" + hashlib.sha256(raw).hexdigest()
 
+def call_zk_prover(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    POST witness to zk-prover HTTP service and return the JSON { proof, publicSignals }
+    """
+    url = f"{ZK_PROVER_URL.rstrip('/')}/api/generate-proof"
+    logger.info("Calling zk-prover at %s", url)
+    try:
+        resp = requests.post(url, json=inputs, timeout=120)
+        resp.raise_for_status()
+        return resp.json()
+    except Timeout:
+        raise RuntimeError("Timeout while calling zk-prover")
+    except RequestException as e:
+        raise RuntimeError(f"Failed calling zk-prover: {e}, content={getattr(e.response, 'content', None)}")
+
+def save_proof_json(job_id: str, proof_obj: Dict[str, Any]) -> str:
+    """
+    Save the proof JSON to local disk under /app/proofs (mounted volume) and return absolute file path.
+    """
+    out_dir = os.getenv("PROOFS_DIR", "/app/proofs")
+    os.makedirs(out_dir, exist_ok=True)
+    fn = f"{job_id}_proof.json"
+    path = os.path.join(out_dir, fn)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(proof_obj, f, indent=2)
+    return os.path.abspath(path)
 
 # --- Main proof job ---
 def run_proof_job(job_id: str, payload: dict):
@@ -69,21 +96,38 @@ def run_proof_job(job_id: str, payload: dict):
         except ValueError:
             raise RuntimeError(f"Invalid dobPreview format: {dob_str}")
         current_year = datetime.now(timezone.utc).year
-        input_json = {"birthYear": birth_year, "currentYear": current_year}
+        input_json = {
+            "birthYear": birth_year,
+            "currentYear": current_year,
+            "minAge": 18 
+        }
 
         logger.info("Built witness: %s", input_json)
 
-        # 3) Simulate proof generation
-        time.sleep(PROOF_SIMULATE_SECONDS)
-        proof = {"mock": True, "inputs": input_json}
+        # 3) Call zk-prover service (replaces previous simulation)
+        zk_response = call_zk_prover(input_json)
+        # zk_response expected: { proof: {...}, publicSignals: [...] }
+        logger.info("Received response from zk-prover")
 
-        proof_path = "some/proof/path/proof.json" # Placeholder path
-        proof_uri = f"file://{os.path.abspath(proof_path)}"
-        proof_hash = compute_hash(proof)
+        # 4) Save proof JSON for record
+        proof_obj = {
+            "proof": zk_response.get("proof"),
+            "publicSignals": zk_response.get("publicSignals"),
+            "inputs": input_json,
+            "meta": {
+                "generated_by": "zk-prover",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        }
+        proof_file_path = save_proof_json(job_id, proof_obj)
+        proof_uri = f"file://{proof_file_path}"
 
-        # 4) Create token
+        # 5) Compute proof hash
+        proof_hash = compute_hash(proof_obj)
+
+        # 6) Create token
         issued_on = datetime.now(timezone.utc).isoformat()
-        expires_on = datetime.now(timezone.utc).replace(year=current_year + 1).isoformat()
+        expires_on = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
         token = {
             "id": f"token_{job_id}",
             "document_id": document_id,
@@ -96,7 +140,7 @@ def run_proof_job(job_id: str, payload: dict):
             "issuer_signature": "0xFAKE_SIG",
         }
 
-        # 5) Save job result
+        # 7) Save job result
         jobs[job_id] = {"status": "done", "token": token, "proof_uri": proof_uri}
         logger.info("Proof job %s completed", job_id)
 
