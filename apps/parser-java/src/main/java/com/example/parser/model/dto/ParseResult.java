@@ -1,4 +1,4 @@
-package com.example.parser.model;
+package com.example.parser.model.dto;
 
 import java.util.Map;
 

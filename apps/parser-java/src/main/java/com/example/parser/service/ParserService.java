@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.parser.exceptions.ExtractionFailedException;
-import com.example.parser.model.ParseResult;
+import com.example.parser.model.dto.ParseResult;
+import com.example.parser.model.entity.DocumentEntity;
+import com.example.parser.repository.DocumentRepository;
 import com.example.parser.utils.ExtractorUtil;
 import com.example.parser.utils.HashUtil;
 import com.example.parser.utils.OcrExtractor;
@@ -30,6 +33,7 @@ public class ParserService {
     private final OcrExtractor ocrExtractor;
     private final ExtractorUtil extractorUtil;
     private final HashUtil hashUtil;
+    private final DocumentRepository documentRepository;
 
     private static final int MIN_TEXT_LENGTH = 20;
 
@@ -49,13 +53,29 @@ public class ParserService {
 
             float confidence = dob != null ? 0.95f : 0.0f;
 
-            return new ParseResult(UUID.randomUUID().toString(), fields, confidence);
+            DocumentEntity entity = new DocumentEntity();
+            entity.setFields(fields);
+            entity.setConfidence(confidence);
+            entity.setCreatedAt(Instant.now());
+
+            documentRepository.save(entity);
+
+            return new ParseResult(entity.getDocumentId().toString(), fields, confidence);
 
         } catch (IOException e) {
             throw new ExtractionFailedException("Failed to extract text from document: " + e.getMessage());
         } finally {
             cleanupTempFile(tempFile);
         }
+    }
+
+    public ParseResult getParsedDocument(UUID documentId) {
+        return documentRepository.findById(documentId)
+                .map(entity -> new ParseResult(
+                        entity.getDocumentId().toString(),
+                        entity.getFields() != null ? entity.getFields() : new HashMap<>(),
+                        entity.getConfidence()))
+                .orElse(null);
     }
 
     private File storeTempFile(MultipartFile file) throws IOException {

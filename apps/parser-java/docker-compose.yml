@@ -1,7 +1,0 @@
-version: "3.8"
-services:
-  parser-service:
-    build: .
-    ports:
-      - "8080:8080"
-    container_name: parser

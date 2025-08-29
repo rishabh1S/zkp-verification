@@ -1,9 +1,20 @@
 spring:
   application:
     name: parser
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        "[format_sql]": true
 
 server:
   port: 8080
 
 tessdata:
-  path: /usr/share/tesseract-ocr/4.00/tessdata
+  path: ${TESSDATA_PATH}

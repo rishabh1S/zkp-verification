@@ -1,7 +1,11 @@
 package com.example.parser.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.parser.exceptions.InvalidFileFormatException;
-import com.example.parser.model.ParseResult;
+import com.example.parser.model.dto.ParseResult;
 import com.example.parser.service.ParserService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,4 +44,12 @@ public class UploadController {
         }
     }
 
+    @GetMapping("/{documentId}")
+    public ResponseEntity<?> getDocument(@PathVariable UUID documentId) {
+        ParseResult result = parserService.getParsedDocument(documentId);
+        if (result == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(result);
+    }
 }
