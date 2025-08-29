@@ -18,3 +18,6 @@ server:
 
 tessdata:
   path: ${TESSDATA_PATH}
+
+frontend:
+  url: ${FRONTEND_URL}

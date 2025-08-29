@@ -25,5 +25,6 @@ services:
       - .env
     environment:
       - PARSER_API_URL=${PARSER_API_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
     depends_on:
       - parser-service
