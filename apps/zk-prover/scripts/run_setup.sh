@@ -14,9 +14,6 @@ echo "--- 2. Phase 1 Trusted Setup (Powers of Tau) ---"
 # Start a new "powers of tau" ceremony
 snarkjs powersoftau new bn128 12 pot12_0000.ptau -v
 
-# Contribute to the ceremony (non-interactive)
-echo "docker build entropy" | snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau -v
-
 # Prepare for phase 2
 snarkjs powersoftau prepare phase2 pot12_0001.ptau pot12_final.ptau -v
 

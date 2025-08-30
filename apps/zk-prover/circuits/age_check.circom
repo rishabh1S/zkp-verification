@@ -7,29 +7,26 @@ include "../node_modules/circomlib/circuits/comparators.circom";
  * Verifies the constraint: currentYear - birthYear >= minAge
  */
 template AgeCheck() {
-    // ## Inputs
-    // Private inputs (the witness)
+    // Private input
     signal input birthYear;
     signal input currentYear;
-
-    // Public input (known by both prover and verifier)
     signal input minAge;
 
-    // ## Logic
+    // Output (becomes public)
+    signal output isOverMinAge;
+
     // 1. Calculate the age
     signal age;
     age <== currentYear - birthYear;
 
-    // 2. Check if age is greater than or equal to minAge.
-    // We use the LessEq comparator from circomlib to check: minAge <= age
-    // The bit-width `16` is sufficient for year values (up to 65535).
+    // 2. Check if age >= minAge
     component comparator = LessEqThan(16);
     comparator.in[0] <== minAge;
     comparator.in[1] <== age;
 
-    // 3. Constrain the output of the check to be true (1)
-    // This enforces the rule for the proof to be valid.
+    // 3. Enforce and expose the result
     comparator.out === 1;
+    isOverMinAge <== comparator.out;
 }
 
 component main = AgeCheck();
