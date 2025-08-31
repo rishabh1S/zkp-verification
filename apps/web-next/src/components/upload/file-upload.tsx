@@ -22,7 +22,7 @@ export function FileUpload({
   selectedFile,
   isUploading,
   uploadProgress,
-}: FileUploadProps) {
+}: Readonly<FileUploadProps>) {
   const [dragActive, setDragActive] = useState(false);
 
   const onDrop = useCallback(

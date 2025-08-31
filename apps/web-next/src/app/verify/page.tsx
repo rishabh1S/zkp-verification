@@ -11,29 +11,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/layout/navbar";
 import { QRScanner } from "@/components/verification/qr-scanner";
 import { VerificationResult } from "@/components/verification/verification-result";
-import { apiClient, type VerifyResponse } from "@/lib/api";
+import { apiClient, type VerifyResponse, type ProofToken } from "@/lib/api";
 import toast from "react-hot-toast";
-import { QrCode, FileText, LinkIcon, Loader2, Shield } from "lucide-react";
+import { QrCode, FileText, Loader2, Shield } from "lucide-react";
 
 export default function VerifyPage() {
   const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState("paste");
   const [tokenInput, setTokenInput] = useState("");
-  const [uriInput, setUriInput] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] =
     useState<VerifyResponse | null>(null);
-  const [verifiedToken, setVerifiedToken] = useState<any>(null);
+  const [verifiedToken, setVerifiedToken] = useState<ProofToken | null>(null);
 
-  // Check for token in URL params
   useEffect(() => {
     const tokenParam = searchParams.get("token");
     if (tokenParam) {
@@ -47,29 +44,20 @@ export default function VerifyPage() {
     }
   }, [searchParams]);
 
-  const handleVerify = async (tokenData?: string, proofUri?: string) => {
+  const handleVerify = async (tokenData: string) => {
     setIsVerifying(true);
     setVerificationResult(null);
     setVerifiedToken(null);
 
     try {
-      const payload: { token?: any; proof_uri?: string } = {};
-      let token = null;
-
-      if (tokenData) {
-        try {
-          token = JSON.parse(tokenData);
-          payload.token = token;
-        } catch (error) {
-          throw new Error("Invalid JSON format");
-        }
-      } else if (proofUri) {
-        payload.proof_uri = proofUri;
-      } else {
-        throw new Error("No token or URI provided");
+      let token: ProofToken;
+      try {
+        token = JSON.parse(tokenData);
+      } catch {
+        throw new Error("Invalid JSON format");
       }
 
-      const response = await apiClient.verifyCredential(payload);
+      const response = await apiClient.verifyCredential({ token });
 
       if (response.data) {
         setVerificationResult(response.data);
@@ -94,33 +82,17 @@ export default function VerifyPage() {
     handleVerify(tokenInput);
   };
 
-  const handleUriVerify = () => {
-    if (!uriInput.trim()) {
-      toast.error("Please enter a proof URI to verify");
-      return;
-    }
-    handleVerify(undefined, uriInput);
-  };
-
   const handleQRScan = (data: string) => {
     setShowScanner(false);
 
-    // Try to parse as JSON first (direct token)
     try {
-      JSON.parse(data);
-      setTokenInput(data);
+      const token = JSON.parse(data);
+      const pretty = JSON.stringify(token, null, 2);
+      setTokenInput(pretty);
       setActiveTab("paste");
-      handleVerify(data);
-      return;
+      handleVerify(pretty);
     } catch {
-      // Not JSON, might be a URI
-      if (data.startsWith("zkverify://") || data.startsWith("https://")) {
-        setUriInput(data);
-        setActiveTab("uri");
-        handleVerify(undefined, data);
-      } else {
-        toast.error("The scanned QR code doesn't contain a valid proof");
-      }
+      toast.error("The scanned QR code doesn't contain a valid proof token");
     }
   };
 
@@ -128,7 +100,6 @@ export default function VerifyPage() {
     setVerificationResult(null);
     setVerifiedToken(null);
     setTokenInput("");
-    setUriInput("");
     setActiveTab("paste");
   };
 
@@ -182,19 +153,15 @@ export default function VerifyPage() {
             <CardHeader>
               <CardTitle>Verification Methods</CardTitle>
               <CardDescription>
-                Choose how you want to provide the proof for verification
+                Provide the proof token for verification
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="paste">
                     <FileText className="mr-2 h-4 w-4" />
                     Paste Token
-                  </TabsTrigger>
-                  <TabsTrigger value="uri">
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Proof URI
                   </TabsTrigger>
                   <TabsTrigger value="qr">
                     <QrCode className="mr-2 h-4 w-4" />
@@ -202,6 +169,7 @@ export default function VerifyPage() {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* Paste JSON token */}
                 <TabsContent value="paste" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="token">Proof Token (JSON)</Label>
@@ -230,43 +198,14 @@ export default function VerifyPage() {
                   </Button>
                 </TabsContent>
 
-                <TabsContent value="uri" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="uri">Proof URI</Label>
-                    <Input
-                      id="uri"
-                      placeholder="zkverify://proof/... or https://..."
-                      value={uriInput}
-                      onChange={(e) => setUriInput(e.target.value)}
-                      className="font-mono"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Enter a proof URI that links to the verification data
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleUriVerify}
-                    disabled={isVerifying || !uriInput.trim()}
-                    className="w-full"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify URI"
-                    )}
-                  </Button>
-                </TabsContent>
-
+                {/* QR scanner */}
                 <TabsContent value="qr" className="space-y-4">
                   <div className="text-center space-y-4">
                     <div className="w-32 h-32 mx-auto bg-muted rounded-lg flex items-center justify-center">
                       <QrCode className="h-12 w-12 text-muted-foreground" />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Scan a QR code containing a proof token or URI
+                      Scan a QR code containing a proof token
                     </p>
                     <Button
                       onClick={() => setShowScanner(true)}
@@ -284,8 +223,8 @@ export default function VerifyPage() {
           <div className="mt-6 p-4 bg-muted/50 rounded-lg">
             <h3 className="font-medium mb-2">How Verification Works</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Cryptographic signatures are validated</li>
-              <li>• Expiration dates are checked</li>
+              <li>• Cryptographic signature is validated</li>
+              <li>• Expiration date is checked</li>
               <li>• Revocation status is verified</li>
               <li>• On-chain anchoring is confirmed (if applicable)</li>
             </ul>

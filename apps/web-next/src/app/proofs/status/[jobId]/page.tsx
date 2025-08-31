@@ -55,7 +55,6 @@ export default function ProofStatusPage() {
         if (response.data) {
           setStatus(response.data);
 
-          // Update progress based on status
           switch (response.data.status) {
             case "queued":
               setProgress(25);
@@ -64,9 +63,6 @@ export default function ProofStatusPage() {
               setProgress(75);
               break;
             case "done":
-              setProgress(100);
-              setIsPolling(false);
-              break;
             case "failed":
               setProgress(100);
               setIsPolling(false);
@@ -82,7 +78,7 @@ export default function ProofStatusPage() {
     // Initial fetch
     pollStatus();
 
-    // Set up polling
+    // Poll every 2s until finished
     const interval = setInterval(() => {
       if (isPolling) {
         pollStatus();
@@ -98,10 +94,10 @@ export default function ProofStatusPage() {
     try {
       const proofId = await proofStorage.saveProof({
         token_json: status.token,
-        proof_hash: status.token.proof_hash || `hash_${jobId}`,
+        proof_hash: status.token.proof_hash,
         name: `Proof ${new Date().toLocaleDateString()}`,
       });
-      toast.success("Proof saved to wallet" + proofId);
+      toast.success("Proof saved to wallet: " + proofId);
 
       router.push("/wallet");
     } catch (error) {
@@ -218,7 +214,7 @@ export default function ProofStatusPage() {
                     <div className="space-y-1 text-sm">
                       <p>
                         <span className="font-medium">Type:</span>{" "}
-                        {status.token.claim?.[0]?.type || "Eligibility Proof"}
+                        {status.token.claim?.type || "Eligibility Proof"}
                       </p>
                       <p>
                         <span className="font-medium">Issued:</span>{" "}
@@ -228,14 +224,12 @@ export default function ProofStatusPage() {
                         <span className="font-medium">Expires:</span>{" "}
                         {new Date(status.token.expires_on).toLocaleDateString()}
                       </p>
-                      {status.proof_uri && (
-                        <p>
-                          <span className="font-medium">Proof URI:</span>{" "}
-                          <code className="text-xs bg-background px-1 rounded">
-                            {status.proof_uri}
-                          </code>
-                        </p>
-                      )}
+                      <p>
+                        <span className="font-medium">Proof Hash:</span>{" "}
+                        <code className="text-xs bg-background px-1 rounded">
+                          {status.token.proof_hash}
+                        </code>
+                      </p>
                     </div>
                   </div>
 
@@ -254,17 +248,11 @@ export default function ProofStatusPage() {
                     </Button>
                     <Button
                       variant="outline"
-                      asChild
+                      onClick={() => setShowQr(true)}
                       className="flex-1 bg-transparent"
                     >
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowQr(true)}
-                        className="flex-1 bg-transparent"
-                      >
-                        <QrCode className="mr-2 h-4 w-4" />
-                        Show QR
-                      </Button>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      Show QR
                     </Button>
                   </div>
                 </div>

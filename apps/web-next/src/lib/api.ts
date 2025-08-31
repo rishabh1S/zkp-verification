@@ -18,10 +18,20 @@ export interface ProofGenerateResponse {
   job_id: string;
 }
 
+export interface ProofToken {
+  id: string;
+  document_id: string;
+  claim: any;
+  proof_hash: string;
+  issuer: string;
+  issued_on: string;
+  expires_on: string;
+  issuer_signature: string;
+}
+
 export interface ProofStatusResponse {
-  status: "queued" | "running" | "done" | "failed";
-  token?: any;
-  proof_uri?: string;
+  status: "queued" | "running" | "done" | "failed" | "not_found";
+  token?: ProofToken;
   error?: string;
 }
 
@@ -81,16 +91,6 @@ class ApiClient {
     wallet_address?: string;
     expires_in_days?: number;
   }): Promise<ApiResponse<ProofGenerateResponse>> {
-    if (this.mockMode) {
-      await this.mockDelay(1000);
-      return {
-        status: 202,
-        data: {
-          job_id: `job_${Date.now()}`,
-        },
-      };
-    }
-    console.log("payload", payload);
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/proofs/generate`,
@@ -112,31 +112,6 @@ class ApiClient {
   async getProofStatus(
     jobId: string
   ): Promise<ApiResponse<ProofStatusResponse>> {
-    if (this.mockMode) {
-      await this.mockDelay(500);
-      // Simulate different states based on time
-      const elapsed = Date.now() - Number.parseInt(jobId.split("_")[1]);
-      if (elapsed < 3000) {
-        return { status: 200, data: { status: "running" } };
-      }
-      return {
-        status: 200,
-        data: {
-          status: "done",
-          token: {
-            id: `token_${jobId}`,
-            claim: { type: "age", threshold: 18, value: true },
-            issuer: "ZKVerify",
-            issued_at: new Date().toISOString(),
-            expires_at: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          proof_uri: `zkverify://proof/${jobId}`,
-        },
-      };
-    }
-
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/proofs/status/${jobId}`
@@ -144,30 +119,14 @@ class ApiClient {
       const data = await response.json();
       return { status: response.status, data };
     } catch (error) {
+      console.error("Error fetching proof status:", error);
       return { status: 500, error: "Status check failed" };
     }
   }
 
   async verifyCredential(payload: {
-    token?: any;
-    proof_uri?: string;
+    token: ProofToken;
   }): Promise<ApiResponse<VerifyResponse>> {
-    if (this.mockMode) {
-      await this.mockDelay(1500);
-      return {
-        status: 200,
-        data: {
-          valid: true,
-          method: "offchain",
-          details: {
-            claim_verified: true,
-            issuer_trusted: true,
-            not_expired: true,
-          },
-        },
-      };
-    }
-
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/credentials/verify`,
@@ -181,6 +140,7 @@ class ApiClient {
       const data = await response.json();
       return { status: response.status, data };
     } catch (error) {
+      console.error("Error verifying credential:", error);
       return { status: 500, error: "Verification failed" };
     }
   }
@@ -189,11 +149,6 @@ class ApiClient {
     proof_hash: string;
     reason: string;
   }): Promise<ApiResponse<{ ok: boolean }>> {
-    if (this.mockMode) {
-      await this.mockDelay(1000);
-      return { status: 200, data: { ok: true } };
-    }
-
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/credentials/revoke`,
@@ -207,6 +162,7 @@ class ApiClient {
       const data = await response.json();
       return { status: response.status, data };
     } catch (error) {
+      console.error("Error revoking credential:", error);
       return { status: 500, error: "Revocation failed" };
     }
   }
