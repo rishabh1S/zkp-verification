@@ -61,6 +61,7 @@ export default function VerifyPage() {
 
       if (response.data) {
         setVerificationResult(response.data);
+        console.log(token);
         setVerifiedToken(token);
         toast.success("Verification completed");
       } else {

@@ -79,22 +79,6 @@ def update_job(job_id: str, **kwargs):
         session.refresh(proof)
         return proof
 
-def verify_proof(proof_obj: dict) -> bool:
-    """
-    Verify a Groth16 proof using the zk-prover HTTP service.
-    Returns True if valid, False otherwise.
-    """
-    try:
-        url = f"{ZK_PROVER_URL.rstrip('/')}/api/verify-proof"
-        resp = requests.post(url, json=proof_obj, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("valid", False)
-    except Exception as e:
-        logger.error("Proof verification failed: %s", e)
-        return False
-
-
 # ---------------------------
 # Main job
 # ---------------------------

@@ -6,7 +6,6 @@ class Verification(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     proof_job_id: Optional[str] = Field(default=None, foreign_key="proof.job_id")
     proof_hash: Optional[str] = Field(default=None, index=True)
-    verifier: Optional[str] = Field(default=None)   
     method: str = Field(default="onchain")        
     tx_hash: Optional[str] = Field(default=None)
     valid: bool = Field(default=False)

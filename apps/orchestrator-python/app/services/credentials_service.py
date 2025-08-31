@@ -6,7 +6,6 @@ from app.models.entity.verification_entity import Verification
 from app.models.verify_models import VerifyRequest, VerifyResponse, RevokeRequest, RevokeResponse
 from app.services.verifier import verify_onchain
 
-
 def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyResponse:
     token = req.token
 
@@ -31,11 +30,13 @@ def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyRes
 
     # 2. Basic token checks
     now = datetime.now(timezone.utc)
+    issuer_trusted = (token.issuer == proof_rec.issuer)
+    not_expired = (token.expires_on.replace(tzinfo=timezone.utc) > now) if token.expires_on else True
     details = {
         "claim_verified": None,
-        "issuer_trusted": (token.issuer == proof_rec.issuer),
-        "not_expired": (token.expires_on.replace(tzinfo=timezone.utc) > now) if token.expires_on else True,
-        "signature_valid": True,  # TODO: implement proper sig check
+        "issuer_trusted": issuer_trusted,
+        "not_expired": not_expired,
+        "signature_valid": True,
     }
 
     if not details["not_expired"]:

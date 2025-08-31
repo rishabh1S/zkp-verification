@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Any, Dict, Tuple, List
 
+import requests
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
@@ -13,6 +14,7 @@ if not logger.handlers:
     handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logger.addHandler(handler)
 
+ZK_PROVER_URL = os.getenv("ZK_PROVER_URL", "http://localhost:3001")
 
 def load_abi(abi_path: str) -> Any:
     with open(abi_path, "r", encoding="utf-8") as fh:
@@ -86,7 +88,27 @@ def get_contract():
     contract = w3.eth.contract(address=Web3.to_checksum_address(addr), abi=abi)
     return contract
 
+# ---------------------------
+# Offchain verification
+# ---------------------------
+def verify_proof(proof_obj: dict) -> bool:
+    """
+    Verify a Groth16 proof using the zk-prover HTTP service.
+    Returns True if valid, False otherwise.
+    """
+    try:
+        url = f"{ZK_PROVER_URL.rstrip('/')}/api/verify-proof"
+        resp = requests.post(url, json=proof_obj, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("valid", False)
+    except Exception as e:
+        logger.error("Proof verification failed: %s", e)
+        return False
 
+# ---------------------------
+# Onchain verification
+# ---------------------------
 def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> bool:
     """
     Calls verifier contract.verifyProof(a,b,c,publicSignals) as an eth_call (no tx).
