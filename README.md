@@ -6,4 +6,4 @@ Monorepo for ZKP age verification:
 - apps/parser-java — Spring Boot document parser
 - apps/prover-fastapi — FastAPI proof orchestrator
 - apps/contracts — Hardhat / Solidity contracts
-- apps/circuits — Circuits (circom / zokrates)
+- apps/circuits — Circuits (circom + snarkjs)

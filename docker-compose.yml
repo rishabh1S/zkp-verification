@@ -39,11 +39,7 @@ services:
       - PARSER_API_URL=${PARSER_API_URL}
       - FRONTEND_URL=${FRONTEND_URL}
       - ZK_PROVER_URL=${ZK_PROVER_URL}
+      - DATABASE_URL=${DATABASE_URL}
     depends_on:
       - parser-service
       - zk-prover
-    volumes:
-      - proofs-data:/app/proofs
-
-volumes:
-  proofs-data:

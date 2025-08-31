@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Any, Optional
 
 class ProofRequest(BaseModel):
     document_id: str
@@ -8,7 +8,6 @@ class ProofRequest(BaseModel):
     expires_in_days: Optional[int] = 30
 
 class ProofStatusResponse(BaseModel):
-    status: str   # queued | running | done | failed
+    status: str
     token: Optional[Any] = None
-    proof_uri: Optional[str] = None
     error: Optional[str] = None
