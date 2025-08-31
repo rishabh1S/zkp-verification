@@ -1,6 +1,8 @@
 const express = require("express");
 const { spawn } = require("child_process");
 const bodyParser = require("body-parser");
+const vkey = require("./build/verification_key.json");
+const { groth16 } = require("snarkjs");
 
 const app = express();
 app.use(bodyParser.json({ limit: "5mb" }));
@@ -55,6 +57,21 @@ app.post("/api/generate-proof", async (req, res) => {
     });
   } catch (err) {
     console.error("unexpected:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/verify-proof", async (req, res) => {
+  try {
+    const { proof, publicSignals } = req.body;
+    if (!proof || !publicSignals) {
+      return res.status(400).json({ error: "missing proof or publicSignals" });
+    }
+
+    const valid = await groth16.verify(vkey, publicSignals, proof);
+    return res.json({ valid });
+  } catch (err) {
+    console.error("Verification error:", err);
     return res.status(500).json({ error: err.message });
   }
 });

@@ -53,8 +53,8 @@ def proof_to_abcs(proof: Dict[str, Any]) -> Tuple[List[int], List[List[int]], Li
 
     # pi_b: take first two rows only (ignore extra rows like ["1","0"])
     b = [
-        [to_int(b_raw[0][0]), to_int(b_raw[0][1])],
-        [to_int(b_raw[1][0]), to_int(b_raw[1][1])]
+        [to_int(b_raw[0][1]), to_int(b_raw[0][0])],
+        [to_int(b_raw[1][1]), to_int(b_raw[1][0])]
     ]
 
     # pi_c: first two values only
@@ -64,14 +64,7 @@ def proof_to_abcs(proof: Dict[str, Any]) -> Tuple[List[int], List[List[int]], Li
 
 
 def public_signals_to_ints(public_signals: List[Any]) -> List[int]:
-    out = []
-    for v in public_signals:
-        if isinstance(v, str) and v.startswith("0x"):
-            out.append(int(v, 16))
-        else:
-            out.append(int(v))
-    return out
-
+    return [int(v) for v in public_signals]
 
 def get_web3() -> Web3:
     rpc = os.getenv("WEB3_RPC_URL")
