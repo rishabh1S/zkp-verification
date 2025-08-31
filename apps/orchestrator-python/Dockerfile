@@ -11,13 +11,16 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 # Copy requirement files
-COPY requirements.txt .
+COPY apps/orchestrator-python/requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app code
-COPY . .
+COPY apps/orchestrator-python/ .
+
+# Copy the Verifier ABI into the container
+COPY apps/hardhat-contract/artifacts/contracts/Verifier.sol/Groth16Verifier.abi.json ./verifier_abi.json
 
 # Set environment variables
 ENV PORT=8000

@@ -28,8 +28,8 @@ services:
 
   orchestrator-service:
     build:
-      context: ./apps/orchestrator-python
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/orchestrator-python/Dockerfile
     ports:
       - "8000:8000"
     container_name: zkverify-orchestrator
@@ -40,6 +40,9 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - ZK_PROVER_URL=${ZK_PROVER_URL}
       - DATABASE_URL=${DATABASE_URL}
+      - WEB3_RPC_URL=${WEB3_RPC_URL}
+      - VERIFIER_CONTRACT_ADDRESS=${VERIFIER_CONTRACT_ADDRESS}
+      - VERIFIER_ABI_PATH=${VERIFIER_ABI_PATH}
     depends_on:
       - parser-service
       - zk-prover

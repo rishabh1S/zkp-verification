@@ -1,7 +1,7 @@
 import os
 import hashlib, json, logging
 from datetime import datetime, timedelta, timezone
-from app.models.proof_entity import Proof
+from app.models.entity.proof_entity import Proof
 from app.db import engine
 from sqlmodel import Session, select
 import requests

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlmodel import Session, select
 from app.models.proof_models import ProofRequest, ProofStatusResponse
-from app.models.proof_entity import Proof
-from app.services.prover import run_proof_job, create_job
+from app.models.entity.proof_entity import Proof
+from app.services.prover_service import run_proof_job, create_job
 from app.db import get_session
 import uuid
 
