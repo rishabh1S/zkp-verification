@@ -4,10 +4,11 @@ from sqlmodel import Session, select
 from app.models.entity.proof_entity import Proof
 from app.models.entity.verification_entity import Verification
 from app.models.verify_models import VerifyRequest, VerifyResponse, RevokeRequest, RevokeResponse
-from app.services.verifier import verify_onchain
+from app.services.verifier import verify_onchain, verify_proof
 
 def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyResponse:
     token = req.token
+    method = req.method
 
     # 1. Lookup proof by proof_hash or job_id
     proof_rec = session.exec(select(Proof).where(Proof.proof_hash == token.proof_hash)).first()
@@ -40,33 +41,32 @@ def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyRes
     }
 
     if not details["not_expired"]:
-        return _save_and_response(session, proof_rec, False, "Token expired", details)
+        return _save_and_response(session, proof_rec, False, "Token expired", details, method)
 
     if not details["issuer_trusted"]:
-        return _save_and_response(session, proof_rec, False, "Untrusted issuer", details)
+        return _save_and_response(session, proof_rec, False, "Untrusted issuer", details, method)
 
     # 3. On-chain verification
     try:
         proof_blob = proof_rec.proof.get("proof") if isinstance(proof_rec.proof, dict) else None
         public_signals = proof_rec.proof.get("publicSignals", []) if isinstance(proof_rec.proof, dict) else []
         if not proof_blob:
-            raise Exception("Stored proof blob missing")
+            raise ValueError("Stored proof blob missing")
 
-        onchain_valid = False
-        try:
-            onchain_valid = verify_onchain(proof_blob, public_signals)
-        except Exception as e:
-            details["onchain_error"] = str(e)
-
-        details["claim_verified"] = bool(onchain_valid)
-        if onchain_valid:
-            return _save_and_response(session, proof_rec, True, "Valid credential (onchain)", details)
+        if method == "offchain":
+            valid = verify_proof(proof_rec.proof)
+            details["claim_verified"] = bool(valid)
+            reason = "Valid credential (offchain)" if valid else "Off-chain verification failed"
         else:
-            return _save_and_response(session, proof_rec, False, "On-chain verification failed", details)
-
+            valid = verify_onchain(proof_blob, public_signals)
+            details["claim_verified"] = bool(valid)
+            reason = "Valid credential (onchain)" if valid else "On-chain verification failed"
+        
+        return _save_and_response(session, proof_rec, valid, reason, details, method)
+        
     except Exception as e:
         details["error"] = str(e)
-        return _save_and_response(session, proof_rec, False, "Verification failed", details)
+        return _save_and_response(session, proof_rec, False, "Verification failed", details, method)
 
 
 def revoke_credential_service(req: RevokeRequest, session: Session) -> RevokeResponse:
@@ -79,14 +79,14 @@ def revoke_credential_service(req: RevokeRequest, session: Session) -> RevokeRes
     return RevokeResponse(ok=False, reason="proof_not_found")
 
 
-def _save_and_response(session: Session, proof: Proof, valid: bool, reason: str, details: dict) -> VerifyResponse:
+def _save_and_response(session: Session, proof: Proof, valid: bool, reason: str, details: dict, method: str) -> VerifyResponse:
     ver = Verification(
         proof_job_id=proof.job_id,
         proof_hash=proof.proof_hash,
-        method="onchain",
+        method=method,
         valid=valid,
         details=details,
     )
     session.add(ver)
     session.commit()
-    return VerifyResponse(valid=valid, reason=reason, method="onchain", details=details)
+    return VerifyResponse(valid=valid, reason=reason, method=method, details=details)

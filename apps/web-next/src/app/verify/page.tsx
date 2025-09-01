@@ -19,6 +19,13 @@ import { VerificationResult } from "@/components/verification/verification-resul
 import { apiClient, type VerifyResponse, type ProofToken } from "@/lib/api";
 import toast from "react-hot-toast";
 import { QrCode, FileText, Loader2, Shield } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function VerifyPage() {
   const searchParams = useSearchParams();
@@ -30,6 +37,9 @@ export default function VerifyPage() {
   const [verificationResult, setVerificationResult] =
     useState<VerifyResponse | null>(null);
   const [verifiedToken, setVerifiedToken] = useState<ProofToken | null>(null);
+  const [verifyMethod, setVerifyMethod] = useState<"offchain" | "onchain">(
+    "offchain"
+  );
 
   useEffect(() => {
     const tokenParam = searchParams.get("token");
@@ -57,7 +67,10 @@ export default function VerifyPage() {
         throw new Error("Invalid JSON format");
       }
 
-      const response = await apiClient.verifyCredential({ token });
+      const response = await apiClient.verifyCredential({
+        token,
+        method: verifyMethod,
+      });
 
       if (response.data) {
         setVerificationResult(response.data);
@@ -182,6 +195,27 @@ export default function VerifyPage() {
                       rows={8}
                       className="font-mono text-sm"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="method">Verification Method</Label>
+                    <Select
+                      value={verifyMethod}
+                      onValueChange={(val: "offchain" | "onchain") =>
+                        setVerifyMethod(val)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="offchain">
+                          Off-chain (fast, free)
+                        </SelectItem>
+                        <SelectItem value="onchain">
+                          On-chain (public, requires contract)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Button
                     onClick={handlePasteVerify}
