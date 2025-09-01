@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.routers import proofs, credentials
 from fastapi.middleware.cors import CORSMiddleware
 import os
+from app.db import init_db
 
 app = FastAPI(
     title="ZKVerify Proof Orchestrator",
@@ -15,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+init_db()
 
 app.include_router(proofs.router)
 app.include_router(credentials.router)

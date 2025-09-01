@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.parser.exceptions.ExtractionFailedException;
+import com.example.parser.model.dto.ExtractionContext;
 import com.example.parser.model.dto.ParseResult;
 import com.example.parser.model.entity.DocumentEntity;
 import com.example.parser.repository.DocumentRepository;
+import com.example.parser.utils.ConfidenceCalculator;
 import com.example.parser.utils.ExtractorUtil;
 import com.example.parser.utils.HashUtil;
 import com.example.parser.utils.OcrExtractor;
@@ -34,6 +36,7 @@ public class ParserService {
     private final ExtractorUtil extractorUtil;
     private final HashUtil hashUtil;
     private final DocumentRepository documentRepository;
+    private final ConfidenceCalculator confidenceCalculator;
 
     private static final int MIN_TEXT_LENGTH = 20;
 
@@ -42,8 +45,8 @@ public class ParserService {
         try {
             tempFile = storeTempFile(file);
 
-            String text = extractContent(file.getOriginalFilename(), tempFile);
-            String dob = extractorUtil.extractDob(text);
+            ExtractionContext context = extractContentWithContext(file.getOriginalFilename(), tempFile);
+            String dob = extractorUtil.extractDob(context.getText());
 
             Map<String, Object> fields = new HashMap<>();
             if (dob != null) {
@@ -51,7 +54,10 @@ public class ParserService {
                 fields.put("dobHash", hashUtil.sha256(dob));
             }
 
-            float confidence = dob != null ? 0.95f : 0.0f;
+            float confidence = confidenceCalculator.calculateConfidence(context, dob);
+
+            log.info("Processed file: {} - DOB found: {}, Confidence: {:.3f}",
+                    file.getOriginalFilename(), dob != null, confidence);
 
             DocumentEntity entity = new DocumentEntity();
             entity.setFields(fields);
@@ -91,18 +97,24 @@ public class ParserService {
         return tempFile;
     }
 
-    private String extractContent(String filename, File file) {
-        if (filename.toLowerCase().endsWith(".pdf")) {
-            String text = pdfTextExtractor.extract(file);
+    private ExtractionContext extractContentWithContext(String filename, File file) {
+        boolean usedOcr = false;
+        String text;
+
+        if (filename != null && filename.toLowerCase().endsWith(".pdf")) {
+            text = pdfTextExtractor.extract(file);
             if (text == null || text.trim().length() < MIN_TEXT_LENGTH) {
-                log.info("PDF appears image-based; running OCR");
-                return ocrExtractor.ocrPdf(file);
+                log.info("PDF appears image-based; running OCR for: {}", filename);
+                text = ocrExtractor.ocrPdf(file);
+                usedOcr = true;
             }
-            return text;
         } else {
             log.info("Running OCR on image: {}", filename);
-            return ocrExtractor.ocrImage(file);
+            text = ocrExtractor.ocrImage(file);
+            usedOcr = true;
         }
+
+        return new ExtractionContext(text, usedOcr, filename);
     }
 
     private void cleanupTempFile(File tempFile) {

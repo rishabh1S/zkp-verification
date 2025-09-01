@@ -29,7 +29,7 @@ export function VerificationResult({
   result,
   token,
   onNewVerification,
-}: VerificationResultProps) {
+}: Readonly<VerificationResultProps>) {
   const getStatusIcon = () => {
     if (result.valid) {
       return <CheckCircle className="h-12 w-12 text-green-500" />;
@@ -139,7 +139,7 @@ export function VerificationResult({
               <div className="grid gap-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Claim:</span>
-                  <span>{getClaimDescription(token.claim)}</span>
+                  <span>{getClaimDescription(token.claim[0])}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Issuer:</span>
@@ -148,14 +148,14 @@ export function VerificationResult({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Issued:</span>
                   <span>
-                    {token.issued_at ? formatDate(token.issued_at) : "Unknown"}
+                    {token.issued_on ? formatDate(token.issued_on) : "Unknown"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Expires:</span>
                   <span>
-                    {token.expires_at
-                      ? formatDate(token.expires_at)
+                    {token.expires_on
+                      ? formatDate(token.expires_on)
                       : "No expiration"}
                   </span>
                 </div>
