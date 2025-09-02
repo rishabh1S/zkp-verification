@@ -17,11 +17,11 @@ import {
   Copy,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import type { VerifyResponse } from "@/lib/api";
+import type { ClaimModel, ProofToken, VerifyResponse } from "@/lib/api";
 
 interface VerificationResultProps {
   result: VerifyResponse;
-  token?: any;
+  token?: ProofToken | null;
   onNewVerification: () => void;
 }
 
@@ -70,12 +70,12 @@ export function VerificationResult({
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getClaimDescription = (claim: any) => {
+  const getClaimDescription = (claim: ClaimModel) => {
     if (!claim) return "Unknown claim";
 
-    switch (claim.type) {
-      case "age_verification":
-        return `Age verification (≥${claim.threshold || 18} years)`;
+    switch (claim.claimType) {
+      case "age_over_18":
+        return `Age verification for (≥${claim.threshold} years)`;
       case "income_verification":
         return `Income verification (≥₹${(
           claim.threshold || 0
@@ -86,7 +86,7 @@ export function VerificationResult({
         ).toLocaleString()})`;
       default:
         return (
-          claim.type
+          claim.claimType
             ?.replace(/_/g, " ")
             .replace(/\b\w/g, (l: string) => l.toUpperCase()) ||
           "Custom verification"
@@ -139,7 +139,7 @@ export function VerificationResult({
               <div className="grid gap-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Claim:</span>
-                  <span>{getClaimDescription(token.claim[0])}</span>
+                  <span>{getClaimDescription(token.claim)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Issuer:</span>

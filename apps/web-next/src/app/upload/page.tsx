@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -25,7 +24,7 @@ import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 const steps = [
   { id: 1, name: "Upload", description: "Upload your document" },
   { id: 2, name: "Review", description: "Review extracted data" },
-  { id: 3, name: "Claims", description: "Select claims to prove" },
+  { id: 3, name: "Claims", description: "Select claim to prove" },
   { id: 4, name: "Generate", description: "Generate proof" },
 ];
 
@@ -38,7 +37,7 @@ export default function UploadPage() {
   const [documentData, setDocumentData] =
     useState<DocumentUploadResponse | null>(null);
   const [hasConsented, setHasConsented] = useState(false);
-  const [selectedClaims, setSelectedClaims] = useState<Claim[]>([]);
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { walletSession } = useAuth();
@@ -53,6 +52,7 @@ export default function UploadPage() {
     setDocumentData(null);
     setCurrentStep(1);
     setCompletedSteps([]);
+    setSelectedClaim(null);
   };
 
   const handleUpload = async () => {
@@ -112,7 +112,7 @@ export default function UploadPage() {
     } else if (currentStep === 2 && hasConsented) {
       setCompletedSteps([...completedSteps, 2]);
       setCurrentStep(3);
-    } else if (currentStep === 3 && selectedClaims.length > 0) {
+    } else if (currentStep === 3 && selectedClaim) {
       setCompletedSteps([...completedSteps, 3]);
       setCurrentStep(4);
     }
@@ -125,29 +125,38 @@ export default function UploadPage() {
   };
 
   const handleGenerate = async () => {
-    // if (!documentData || !walletSession) return;
-    if (!documentData) return;
-    console.log("documentData", documentData);
+    if (!documentData || !selectedClaim) return;
 
     setIsGenerating(true);
 
     try {
       const response = await apiClient.generateProof({
         document_id: documentData.documentId,
-        claim: selectedClaims,
-        // wallet_address: walletSession.address,
+        claim: {
+          claimType: selectedClaim.id,
+          threshold: selectedClaim.threshold,
+        },
+        // wallet_address: walletSession?.address,
         expires_in_days: 30,
       });
 
       if (response.data) {
-        toast("Your proof is being generated");
-        router.push(`/proofs/status/${response.data.job_id}`);
+        toast.success("Proof generated successfully");
+
+        // Save locally for viewing later
+        localStorage.setItem(
+          "lastGeneratedProof",
+          JSON.stringify(response.data)
+        );
+
+        // Redirect to proof view
+        router.push(`/proofs/view/${response.data.proof_id}`);
       } else {
         throw new Error(response.error || "Generation failed");
       }
     } catch (error) {
       console.error("Error generating proof:", error);
-      toast.error("Failed to start proof generation");
+      toast.error("Failed to generate proof");
     } finally {
       setIsGenerating(false);
     }
@@ -160,7 +169,7 @@ export default function UploadPage() {
       case 2:
         return hasConsented;
       case 3:
-        return selectedClaims.length > 0;
+        return selectedClaim !== null; // Check for single claim
       case 4:
         return true;
       default:
@@ -217,8 +226,8 @@ export default function UploadPage() {
               {currentStep === 3 && documentData && (
                 <ClaimSelector
                   extractedFields={documentData.fields}
-                  selectedClaims={selectedClaims}
-                  onClaimsChange={setSelectedClaims}
+                  selectedClaim={selectedClaim} // Pass single claim
+                  onClaimChange={setSelectedClaim} // Use singular handler
                 />
               )}
 
@@ -229,16 +238,15 @@ export default function UploadPage() {
                       Ready to Generate Proof
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Your proof will be generated for {selectedClaims.length}{" "}
-                      claim(s)
+                      Your proof will be generated for the selected claim
                     </p>
-                    <div className="flex flex-wrap justify-center gap-2 mb-6">
-                      {selectedClaims.map((claim) => (
-                        <Badge key={claim.id} variant="default">
-                          {claim.label}
+                    {selectedClaim && ( // Show single claim badge
+                      <div className="flex justify-center mb-6">
+                        <Badge variant="default" className="text-md px-2 py-1">
+                          {selectedClaim.label}
                         </Badge>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   <Button

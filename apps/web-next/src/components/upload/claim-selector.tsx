@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,13 +34,13 @@ export interface Claim {
 
 interface ClaimSelectorProps {
   extractedFields: Record<string, any>;
-  selectedClaims: Claim[];
-  onClaimsChange: (claims: Claim[]) => void;
+  selectedClaim: Claim | null;
+  onClaimChange: (claim: Claim | null) => void;
 }
 
 const presetClaims = [
   {
-    id: "age_18",
+    id: "age_over_18",
     type: "age_verification",
     label: "Age ≥ 18 years",
     threshold: 18,
@@ -50,7 +49,7 @@ const presetClaims = [
     description: "Prove you are 18 years or older",
   },
   {
-    id: "age_21",
+    id: "age_over_21",
     type: "age_verification",
     label: "Age ≥ 21 years",
     threshold: 21,
@@ -80,8 +79,8 @@ const presetClaims = [
 
 export function ClaimSelector({
   extractedFields,
-  selectedClaims,
-  onClaimsChange,
+  selectedClaim,
+  onClaimChange,
 }: Readonly<ClaimSelectorProps>) {
   const [customClaim, setCustomClaim] = useState({
     label: "",
@@ -96,15 +95,15 @@ export function ClaimSelector({
   );
 
   const togglePresetClaim = (preset: any) => {
-    const exists = selectedClaims.find((c) => c.id === preset.id);
-    if (exists) {
-      onClaimsChange(selectedClaims.filter((c) => c.id !== preset.id));
+    // If the same claim is clicked, deselect it
+    if (selectedClaim?.id === preset.id) {
+      onClaimChange(null);
     } else {
       // Check if the required field exists
       if (!extractedFields[preset.field]) {
         return; // Can't add claim without required field
       }
-      onClaimsChange([...selectedClaims, { ...preset }]);
+      onClaimChange({ ...preset });
     }
   };
 
@@ -120,33 +119,37 @@ export function ClaimSelector({
       field: customClaim.field,
     };
 
-    onClaimsChange([...selectedClaims, newClaim]);
+    onClaimChange(newClaim);
     setCustomClaim({ label: "", field: "", operator: "gte", threshold: 0 });
     setShowCustomForm(false);
   };
 
-  const removeClaim = (claimId: string) => {
-    onClaimsChange(selectedClaims.filter((c) => c.id !== claimId));
+  const removeClaim = () => {
+    onClaimChange(null);
   };
 
   const canAddPreset = (preset: any) => {
     return extractedFields[preset.field] !== undefined;
   };
 
+  const isPresetSelected = (presetId: string) => {
+    return selectedClaim?.id === presetId;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Select Claims to Prove</CardTitle>
+          <CardTitle>Select Claim to Prove</CardTitle>
           <CardDescription>
-            Choose which eligibility requirements you want to prove with your
+            Choose which eligibility requirement you want to prove with your
             document
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4">
             {presetClaims.map((preset) => {
-              const isSelected = selectedClaims.some((c) => c.id === preset.id);
+              const isSelected = isPresetSelected(preset.id);
               const canAdd = canAddPreset(preset);
 
               return (
@@ -185,30 +188,24 @@ export function ClaimSelector({
         </CardContent>
       </Card>
 
-      {selectedClaims.length > 0 && (
+      {selectedClaim && (
         <Card>
           <CardHeader>
-            <CardTitle>Selected Claims</CardTitle>
+            <CardTitle>Selected Claim</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {selectedClaims.map((claim) => (
-                <Badge
-                  key={claim.id}
-                  variant="default"
-                  className="flex items-center gap-2"
+              <Badge variant="default" className="flex items-center gap-2 p-2">
+                {selectedClaim.label}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={removeClaim}
                 >
-                  {claim.label}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => removeClaim(claim.id)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -221,7 +218,11 @@ export function ClaimSelector({
         </CardHeader>
         <CardContent>
           {!showCustomForm ? (
-            <Button variant="outline" onClick={() => setShowCustomForm(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowCustomForm(true)}
+              disabled={!!selectedClaim} // Disable if a claim is already selected
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Custom Claim
             </Button>
