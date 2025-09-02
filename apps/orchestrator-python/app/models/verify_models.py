@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal, Optional
 
 class ProofToken(BaseModel):
     id: str
@@ -14,6 +14,7 @@ class ProofToken(BaseModel):
 
 class VerifyRequest(BaseModel):
     token: ProofToken
+    method: Optional[Literal["onchain", "offchain"]] = "offchain"
 
 class VerifyResponse(BaseModel):
     valid: bool

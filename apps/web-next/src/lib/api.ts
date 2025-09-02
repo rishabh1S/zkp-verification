@@ -126,6 +126,7 @@ class ApiClient {
 
   async verifyCredential(payload: {
     token: ProofToken;
+    method?: "onchain" | "offchain";
   }): Promise<ApiResponse<VerifyResponse>> {
     try {
       const response = await fetch(
@@ -133,7 +134,10 @@ class ApiClient {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            token: payload.token,
+            method: payload.method,
+          }),
         }
       );
 
