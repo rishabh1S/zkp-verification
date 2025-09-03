@@ -3,8 +3,8 @@ from typing import Optional
 from datetime import datetime, timezone
 
 class Verification(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    proof_job_id: Optional[str] = Field(default=None, foreign_key="proof.job_id")
+    verification_id: Optional[int] = Field(default=None, primary_key=True)
+    proof_id: Optional[str] = Field(default=None, foreign_key="proof.proof_id")
     proof_hash: Optional[str] = Field(default=None, index=True)
     method: str = Field(default="onchain")        
     tx_hash: Optional[str] = Field(default=None)

@@ -1,16 +1,16 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import List, Dict, Any, Literal, Optional
+from typing import List, Dict, Literal, Optional
+from app.models.claim_models import ClaimModel
 
 class ProofToken(BaseModel):
-    id: str
-    document_id: str
-    claim: List[Dict[str, Any]]
-    proof_hash: str
+    claim: ClaimModel
+    proof: Dict
+    inputs: List[str]
+    verifier_contract: str
     issuer: str
     issued_on: datetime
     expires_on: datetime
-    issuer_signature: str
 
 class VerifyRequest(BaseModel):
     token: ProofToken
@@ -18,15 +18,14 @@ class VerifyRequest(BaseModel):
 
 class VerifyResponse(BaseModel):
     valid: bool
-    reason: str | None = None
-    method: str = "offchain"  # offchain or onchain (later)
-    txHash: str | None = None
-    details: dict | None = None
+    reason: Optional[str] = None
+    method: str = "offchain"
+    txHash: Optional[str] = None
+    details: Optional[dict] = None
 
 class RevokeRequest(BaseModel):
     proof_hash: str
     reason: str | None = None
-
 
 class RevokeResponse(BaseModel):
     ok: bool

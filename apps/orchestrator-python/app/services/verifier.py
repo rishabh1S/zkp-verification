@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from typing import Any, Dict, Tuple, List
+from typing import Any, Dict, Optional, Tuple, List
 
 import requests
 from web3 import Web3
@@ -15,6 +15,7 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 ZK_PROVER_URL = os.getenv("ZK_PROVER_URL", "http://localhost:3001")
+VERIFIER_PRIVATE_KEY = os.getenv("VERIFIER_PRIVATE_KEY")
 
 def load_abi(abi_path: str) -> Any:
     with open(abi_path, "r", encoding="utf-8") as fh:
@@ -109,22 +110,58 @@ def verify_proof(proof_obj: dict) -> bool:
 # ---------------------------
 # Onchain verification
 # ---------------------------
-def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> bool:
+# def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> bool:
+#     """
+#     Calls verifier contract.verifyProof(a,b,c,publicSignals) as an eth_call (no tx).
+#     Returns True/False.
+#     """
+#     contract = get_contract()
+#     a, b, c = proof_to_abcs(proof_obj)
+#     public_inputs = public_signals_to_ints(public_signals or [])
+#     logger.info("Calling on-chain verifier with public inputs: %s", public_inputs)
+#     try:
+#         # call the view method
+#         valid = contract.functions.verifyProof(a, b, c, public_inputs).call()
+#         return bool(valid)
+#     except ContractLogicError as e:
+#         logger.error("Contract verification failed (logic error): %s", e)
+#         return False
+#     except Exception as e:
+#         logger.exception("On-chain verify exception: %s", e)
+#         raise
+
+def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> Tuple[bool, Optional[str]]:
     """
-    Calls verifier contract.verifyProof(a,b,c,publicSignals) as an eth_call (no tx).
-    Returns True/False.
+    Verify a proof on-chain.
+    Sends a transaction, returns (valid, txHash).
     """
     contract = get_contract()
     a, b, c = proof_to_abcs(proof_obj)
     public_inputs = public_signals_to_ints(public_signals or [])
-    logger.info("Calling on-chain verifier with public inputs: %s", public_inputs)
+    logger.info("Calling on-chain verifier with inputs: %s", public_inputs)
+
+    w3 = get_web3()
+
     try:
-        # call the view method
-        valid = contract.functions.verifyProof(a, b, c, public_inputs).call()
-        return bool(valid)
+        acct = w3.eth.account.from_key(VERIFIER_PRIVATE_KEY)
+        nonce = w3.eth.get_transaction_count(acct.address)
+
+        tx = contract.functions.verifyProof(a, b, c, public_inputs).build_transaction({
+            "from": acct.address,
+            "nonce": nonce,
+            "gas": contract.functions.verifyProof(a, b, c, public_inputs).estimate_gas({"from": acct.address}),
+            "gasPrice": w3.eth.gas_price,
+        })
+
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=acct.key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        valid = bool(receipt["status"] == 1)
+        return valid, w3.to_hex(tx_hash)
     except ContractLogicError as e:
         logger.error("Contract verification failed (logic error): %s", e)
-        return False
+        return False, None
     except Exception as e:
         logger.exception("On-chain verify exception: %s", e)
         raise

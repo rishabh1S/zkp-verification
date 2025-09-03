@@ -14,25 +14,24 @@ export interface DocumentUploadResponse {
   confidence: number;
 }
 
-export interface ProofGenerateResponse {
-  job_id: string;
+export interface ClaimModel {
+  claimType: string;
+  threshold: number;
+}
+
+export interface ProofResponse {
+  proof_id: string;
+  token: ProofToken;
 }
 
 export interface ProofToken {
-  id: string;
-  document_id: string;
-  claim: any;
-  proof_hash: string;
+  claim: ClaimModel;
+  proof: any;
+  inputs: string[];
+  verifier_contract: string;
   issuer: string;
   issued_on: string;
   expires_on: string;
-  issuer_signature: string;
-}
-
-export interface ProofStatusResponse {
-  status: "queued" | "running" | "done" | "failed" | "not_found";
-  token?: ProofToken;
-  error?: string;
 }
 
 export interface VerifyResponse {
@@ -43,23 +42,20 @@ export interface VerifyResponse {
   details?: any;
 }
 
+export interface RevokeResponse {
+  ok: boolean;
+  reason?: string;
+}
+
 class ApiClient {
-  private baseUrlParser: string;
-  private baseUrlOrchestrator: string;
-  private mockMode: boolean;
+  private readonly baseUrlParser: string;
+  private readonly baseUrlOrchestrator: string;
 
   constructor() {
     this.baseUrlParser =
       process.env.NEXT_PUBLIC_API_PARSER || "http://localhost:8080";
     this.baseUrlOrchestrator =
       process.env.NEXT_PUBLIC_API_ORCHESTRATOR || "http://localhost:8000";
-    this.mockMode = process.env.NEXT_PUBLIC_MOCK === "true";
-  }
-
-  private async mockDelay(ms = 1000) {
-    if (this.mockMode) {
-      await new Promise((resolve) => setTimeout(resolve, ms));
-    }
   }
 
   async uploadDocument(
@@ -87,10 +83,10 @@ class ApiClient {
 
   async generateProof(payload: {
     document_id: string;
-    claim: any;
+    claim: ClaimModel;
     wallet_address?: string;
     expires_in_days?: number;
-  }): Promise<ApiResponse<ProofGenerateResponse>> {
+  }): Promise<ApiResponse<ProofResponse>> {
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/proofs/generate`,
@@ -109,21 +105,6 @@ class ApiClient {
     }
   }
 
-  async getProofStatus(
-    jobId: string
-  ): Promise<ApiResponse<ProofStatusResponse>> {
-    try {
-      const response = await fetch(
-        `${this.baseUrlOrchestrator}/api/proofs/status/${jobId}`
-      );
-      const data = await response.json();
-      return { status: response.status, data };
-    } catch (error) {
-      console.error("Error fetching proof status:", error);
-      return { status: 500, error: "Status check failed" };
-    }
-  }
-
   async verifyCredential(payload: {
     token: ProofToken;
     method?: "onchain" | "offchain";
@@ -134,10 +115,7 @@ class ApiClient {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: payload.token,
-            method: payload.method,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -152,7 +130,7 @@ class ApiClient {
   async revokeCredential(payload: {
     proof_hash: string;
     reason: string;
-  }): Promise<ApiResponse<{ ok: boolean }>> {
+  }): Promise<ApiResponse<RevokeResponse>> {
     try {
       const response = await fetch(
         `${this.baseUrlOrchestrator}/api/credentials/revoke`,
