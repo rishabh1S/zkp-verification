@@ -43,6 +43,7 @@ services:
       - WEB3_RPC_URL=${WEB3_RPC_URL}
       - VERIFIER_CONTRACT_ADDRESS=${VERIFIER_CONTRACT_ADDRESS}
       - VERIFIER_ABI_PATH=${VERIFIER_ABI_PATH}
+      - VERIFIER_PRIVATE_KEY=${VERIFIER_PRIVATE_KEY}
     depends_on:
       - parser-service
       - zk-prover

@@ -159,14 +159,6 @@ export function VerificationResult({
                       : "No expiration"}
                   </span>
                 </div>
-                {token.subject && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subject:</span>
-                    <span className="font-mono text-xs">
-                      {token.subject.slice(0, 10)}...{token.subject.slice(-8)}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -209,7 +201,7 @@ export function VerificationResult({
                   </Button>
                   <Button size="sm" variant="outline" asChild>
                     <a
-                      href={`https://etherscan.io/tx/${result.txHash}`}
+                      href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

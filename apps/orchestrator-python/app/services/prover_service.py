@@ -9,6 +9,7 @@ from sqlmodel import Session
 import requests
 from requests.exceptions import RequestException, Timeout
 
+
 logger = logging.getLogger("prover")
 logger.setLevel(logging.INFO)
 if not logger.handlers:
@@ -22,6 +23,16 @@ ZK_PROVER_URL = os.getenv("ZK_PROVER_URL", "http://localhost:3001")
 # ---------------------------
 # Helpers
 # ---------------------------
+
+def compute_hash(claim, proof, inputs) -> str:
+    obj = {
+        "claim": claim,
+        "proof": proof,
+        "inputs": inputs,
+    }
+    raw = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
+    return "sha256:" + hashlib.sha256(raw).hexdigest()
+
 def fetch_parsed_document(document_id: str):
     """Fetch parsed document JSON from parser service."""
     url = f"{PARSER_API_URL.rstrip('/')}/api/documents/{document_id}"
@@ -32,11 +43,6 @@ def fetch_parsed_document(document_id: str):
     except RequestException as e:
         logger.error("Failed to fetch doc %s: %s", document_id, e)
         return None
-
-def compute_hash(obj: dict) -> str:
-    """Compute SHA256 over canonical JSON of the proof object."""
-    raw = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
-    return "sha256:" + hashlib.sha256(raw).hexdigest()
 
 def call_zk_prover(inputs: dict) -> dict:
     """
@@ -87,7 +93,7 @@ def generate_proof(document_id: str, claim: ClaimModel, expires_in_days: int = 3
     )
 
     # Store proof_hash for revocation only
-    proof_hash = compute_hash(final_proof.model_dump(mode="json"))
+    proof_hash = compute_hash(claim.model_dump(),zk_resp.get("proof", {}),zk_resp.get("publicSignals", []))
     with Session(engine) as session:
         db_proof = Proof(
             document_id=document_id,
