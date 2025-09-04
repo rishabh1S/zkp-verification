@@ -72,7 +72,6 @@ public class ConfidenceCalculator {
                 }
             }
         }
-
         return 0.1f; // No pattern matched
     }
 

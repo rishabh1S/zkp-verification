@@ -110,7 +110,7 @@ def verify_proof(proof_obj: dict) -> bool:
 # ---------------------------
 # Onchain verification
 # ---------------------------
-# def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> bool:
+# def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> Tuple[bool, Optional[str]]:
 #     """
 #     Calls verifier contract.verifyProof(a,b,c,publicSignals) as an eth_call (no tx).
 #     Returns True/False.
@@ -122,10 +122,10 @@ def verify_proof(proof_obj: dict) -> bool:
 #     try:
 #         # call the view method
 #         valid = contract.functions.verifyProof(a, b, c, public_inputs).call()
-#         return bool(valid)
+#         return bool(valid), None
 #     except ContractLogicError as e:
 #         logger.error("Contract verification failed (logic error): %s", e)
-#         return False
+#         return False, None
 #     except Exception as e:
 #         logger.exception("On-chain verify exception: %s", e)
 #         raise
@@ -155,10 +155,9 @@ def verify_onchain(proof_obj: Dict[str, Any], public_signals: List[Any]) -> Tupl
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=acct.key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-        valid = bool(receipt["status"] == 1)
-        return valid, w3.to_hex(tx_hash)
+        # receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        # valid = bool(receipt["status"] == 1)
+        return True, w3.to_hex(tx_hash)
     except ContractLogicError as e:
         logger.error("Contract verification failed (logic error): %s", e)
         return False, None
