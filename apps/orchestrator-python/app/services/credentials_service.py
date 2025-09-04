@@ -1,4 +1,4 @@
-import hashlib, json, logging
+import logging
 from datetime import datetime, timezone
 from sqlmodel import Session, select
 
@@ -18,16 +18,29 @@ if not logger.handlers:
 def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyResponse:
     token = req.token
     method = req.method
-
-    # --- 1. Basic checks ---
     now = datetime.now(timezone.utc)
-    not_expired = token.expires_on.replace(tzinfo=timezone.utc) > now
-    issuer_trusted = (token.issuer == "ZKVerify-MVP")
+
+    # --- 1. Recompute proof_hash to check tampering ---
+    proof_hash = compute_hash(token.claim.model_dump(), token.proof, token.inputs)
+    proof_rec = session.exec(select(Proof).where(Proof.proof_hash == proof_hash)).first()
+
+    if not proof_rec:
+        # No matching proof in DB → tampered or unknown proof
+        return VerifyResponse(
+            valid=False,
+            reason="Proof not found or tampered",
+            method=method,
+            details={"error": "Invalid or tampered proof"}
+        )
+
+    # --- 2. Use DB values (issuer, expiry, status) ---
+    issuer_trusted = (proof_rec.issuer == "ZKVerify-MVP")
+    not_expired = (proof_rec.expires_on.replace(tzinfo=timezone.utc) > now) if proof_rec.expires_on else True
 
     details = {
         "issuer_trusted": issuer_trusted,
         "not_expired": not_expired,
-        "signature_valid": True,
+        "signature_valid": True,   # TODO: implement real sig check
         "claim_verified": None,
     }
 
@@ -37,12 +50,8 @@ def verify_credential_service(req: VerifyRequest, session: Session) -> VerifyRes
     if not issuer_trusted:
         return VerifyResponse(valid=False, reason="Untrusted issuer", method=method, details=details)
 
-    # --- 2. Check revocation ---
-    proof_hash = compute_hash(token.claim.model_dump(),token.proof,token.inputs)
-    proof_rec = session.exec(select(Proof).where(Proof.proof_hash == proof_hash)).first()
-    if proof_rec and proof_rec.status == "revoked":
+    if proof_rec.status == "revoked":
         details["revoked_reason"] = proof_rec.reason
-        logger.info("Proof revoked: proof_hash=%s", proof_hash)
         return VerifyResponse(valid=False, reason="Proof revoked", method=method, details=details)
 
     # --- 3. Verification (off-chain or on-chain) ---
